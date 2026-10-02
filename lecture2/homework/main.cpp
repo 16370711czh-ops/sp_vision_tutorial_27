@@ -1,27 +1,40 @@
+#include <opencv2/opencv.hpp>
 #include "io/camera.hpp"
 #include "tasks/yolo.hpp"
-#include "opencv2/opencv.hpp"
 #include "tools/img_tools.hpp"
 
 int main()
 {
-    // 初始化相机、yolo类
-    
-    // while (1) {
-        // 调用相机读取图像
+    Camera camera;
 
+    auto_aim::YOLO yolo("./configs/yolo.yaml");
 
-        // 调用yolo识别装甲板
+    cv::Mat img;
 
+    while (true)
+    {
+        camera.read(img);
 
+        if (img.empty())
+            continue;
 
-        // 显示图像
-        // cv::resize(img, img , cv::Size(640, 480));
-        // cv::imshow("img", img);
-        // if (cv::waitKey(0) == 'q') {
-        //     // break;
-        // }
-    // }
+        auto armors = yolo.detect(img);
+
+        for (auto& armor : armors)
+        {
+            tools::draw_points(
+                img,
+                armor.points,
+                cv::Scalar(0, 255, 0),
+                2
+            );
+        }
+
+        cv::imshow("img", img);
+
+        if (cv::waitKey(1) == 'q')
+            break;
+    }
 
     return 0;
 }
