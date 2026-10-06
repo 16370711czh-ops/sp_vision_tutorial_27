@@ -1,3 +1,4 @@
+#include <fmt/format.h>
 #include <opencv2/opencv.hpp>
 #include "io/camera.hpp"
 #include "tasks/yolo.hpp"
@@ -26,6 +27,23 @@ int main()
                 img,
                 armor.points,
                 cv::Scalar(0, 255, 0),
+                2
+            );
+
+            auto info = fmt::format(
+                "{:.2f} {} {} {}",
+                armor.confidence,
+                auto_aim::COLORS[armor.color],
+                auto_aim::ARMOR_NAMES[armor.name],
+                auto_aim::ARMOR_TYPES[armor.type]
+            );
+
+            tools::draw_text(
+                img,
+                info,
+                armor.center,
+                cv::Scalar(0, 255, 0),
+                1.0,
                 2
             );
         }
