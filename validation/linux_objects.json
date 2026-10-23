@@ -1,0 +1,154 @@
+[
+  {
+    "source_tree": "final_patch",
+    "source": "src/task_2.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 3791656,
+    "object_sha256": "e5136fee6428611903004a2badd1cd0a5a89a646dfcfc5f902f5b30be40b655d",
+    "source_sha256": "159afd6d0f110def0dbebc39137dfae1ef1da1a67593387cc1acd2f7ab0b426d"
+  },
+  {
+    "source_tree": "final_patch",
+    "source": "tasks/auto_aim/target.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 5560248,
+    "object_sha256": "371426a8f251e8a0cb6fc558883fa34e7a2f1bf8896f66a99a55189d04ed384f",
+    "source_sha256": "e1a76d68057cd7760558d8b1862b57c896880fed038792b7f33ada4063e41c76"
+  },
+  {
+    "source_tree": "final_patch",
+    "source": "tasks/auto_aim/task2_aimer.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 481640,
+    "object_sha256": "3e99ae16eeba6a62b3d74e84d7fc0510763a9657f7d1f93544b31edc9442b88d",
+    "source_sha256": "22aa9843153f2977bac9a4552fbf26a92c1f48fd4e0abe94eb7087a7efadb5ab"
+  },
+  {
+    "source_tree": "final_patch",
+    "source": "tasks/auto_aim/task2_tracker.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 518368,
+    "object_sha256": "da9b673cb80c0b8bafec4b36f7e54e1632d68f7b7ba697a3527ff66376ad7a41",
+    "source_sha256": "3fa2f2fe1ecde0000f44bfd96e4894c2279016cd3bdd91393f3c50a3cb607850"
+  },
+  {
+    "source_tree": "final_patch",
+    "source": "tasks/auto_aim/task2_pipeline.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 260632,
+    "object_sha256": "d7f56ce2cd49c545d049905a0acba73bbc6b2a05be22121c2c9428316ba213a0",
+    "source_sha256": "d420ac49132feee2d4cbe3c2e4442192f4e600ffb55e30f6f06abe10edf492a0"
+  },
+  {
+    "source_tree": "final_patch",
+    "source": "tasks/auto_aim/task2_config.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 2703536,
+    "object_sha256": "825943ec627351b00c49ef51365236830e0690c50787ddaf2517096d770d3510",
+    "source_sha256": "0aee1edae72776fc30ba314d3a3de8e7e57494c4a4c3320d5fa4eb273c690a89"
+  },
+  {
+    "source_tree": "final_patch",
+    "source": "tasks/auto_aim/solver.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 4819496,
+    "object_sha256": "d5e6c508d82f170e078a71e246ed0da074aadcd06ae16fb3b962e05d2831645e",
+    "source_sha256": "cbeca997bad9405fa8cb4f29eef1233fc23e5b8b40d3683f2956f3eaf8b42f52"
+  },
+  {
+    "source_tree": "final_patch",
+    "source": "tools/extended_kalman_filter.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 5053144,
+    "object_sha256": "f54d98efcda2540035cbec39e972d1a8326f67a3a4a6d4edbaf82ad3602a3d93",
+    "source_sha256": "00f8289186f6916660488aa07ba693df25228bd7526f90fd426223fa95f5531a"
+  },
+  {
+    "source_tree": "final_patch",
+    "source": "tools/trajectory.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 8648,
+    "object_sha256": "5c149335e472adb23a7fa421d50f012f2c9ba153f37048598e42f7ed76bc2f3d",
+    "source_sha256": "90e02a86e7021399df8a74a77c2eed69febe06c8e337902262cced4ecd1dd678"
+  },
+  {
+    "source_tree": "final_patch",
+    "source": "io/gimbal/gimbal.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 3025024,
+    "object_sha256": "8e97ec38a18c33ba299b7a76a85036c493ad85163eb2a6411f4f54811284bf6a",
+    "source_sha256": "2ebde93c20f8f65583b5d294825c7a3d6a67437fe43ab92b2a9ccd65a2195f23"
+  },
+  {
+    "source_tree": "final_patch",
+    "source": "io/hikrobot/hikrobot.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 2806408,
+    "object_sha256": "419099972c19e1ab566f0b34af0f54c53a4b92d73d2dc6e62aeea42ef4a519c0",
+    "source_sha256": "fc1a0d7f7d8cfd7ccc8302141b67d99430da1282f547418ca4e3687dac1f15fd"
+  },
+  {
+    "source_tree": "final_patch",
+    "source": "io/camera.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 2582880,
+    "object_sha256": "146cbee47953ef69fd52027a2af8c2ba87d348829d12d66e08d004c5f8d25fd2",
+    "source_sha256": "a9d66d0d449c4705db20a0d7de68b1c1487e8cd8c805095a1aafdb829ca29d54"
+  },
+  {
+    "source_tree": "final_patch",
+    "source": "tests/task2_solver_roundtrip.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 1066440,
+    "object_sha256": "0e43480f7ddad255cdbded5ce7c5a60c47e02da0f571e22944a62aae45c037b8",
+    "source_sha256": "05cae35c9ba5b368f0a69b299998fe6a0461f9bc248589efe1630e0e062d3ad1"
+  },
+  {
+    "source_tree": "final_patch",
+    "source": "src/task_1.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 2454640,
+    "object_sha256": "7a771f45e86df1e4458783e4d2e61a839184cb0f5be5a393e1d7a9503621bdff",
+    "source_sha256": "a411a1e45dfceaabd196e55a0afd2581beec6f59b77d08750e3d38a95fe483a8"
+  },
+  {
+    "source_tree": "final_patch",
+    "source": "src/task_3.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 2454640,
+    "object_sha256": "d94cf1ae6ffd1d9f5e847b3fcbbf2ca23bbe4e735bbc84f91715ddd2d44942e3",
+    "source_sha256": "b500f52d0e5f874e31f47942bf01f68394b658490470891f522dae1f2a121b07"
+  },
+  {
+    "source_tree": "final_patch",
+    "source": "tools/crc.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 3712,
+    "object_sha256": "1619440041fb38daafa0612ee8d7dea6cd6a9d090ee32e18cc4b45354e3d2635",
+    "source_sha256": "71a555bebd45b7a9a01f1c0943632950731ac60476d31f1cb466603e77a2e3f7"
+  },
+  {
+    "source_tree": "full_merged_package",
+    "merged_source": "src/task_1.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 3642640,
+    "object_sha256": "d6e487657f0f7fb516ab6c2ad36c3ba5aad73272d5c7a354ed28f1675036bb5c",
+    "source_sha256": "93501326a40d04775bcaccdd8972ef6ef5ae99b8cccfec0ac9ceccd8ead4e1ce"
+  },
+  {
+    "source_tree": "full_merged_package",
+    "merged_source": "src/task_3.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 4054168,
+    "object_sha256": "439197c1afdc17c3692aa9a445c5bf901f1c76bddf5207ecc11b8f6178f8a23d",
+    "source_sha256": "c5a5a41adfe17fc4e3552d16d468cfff8257e393da8459ccc4ee182c5874b475"
+  },
+  {
+    "source_tree": "full_merged_package",
+    "merged_source": "tasks/auto_aim/outpost_tracker.cpp",
+    "format": "ELF64 x86_64",
+    "bytes": 428424,
+    "object_sha256": "f79d6f9456d759dcfd2daddcce84fe1e45ef50ffe1cbdd8a75363bc75600c666",
+    "source_sha256": "e9936cd9150969d9f49427240101d08fc52522a3051f652936444c371c299cc9"
+  }
+]

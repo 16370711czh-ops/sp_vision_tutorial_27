@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <limits>
+#include <stdexcept>
 #include <vector>
 
 #include "tools/logger.hpp"
@@ -37,16 +39,41 @@ const std::vector<cv::Point3f> SPECIAL_ARMOR_POINTS{
 Solver::Solver(const std::string & config_path) : R_gimbal2world_(Eigen::Matrix3d::Identity())
 {
   auto yaml = tools::load(config_path);
+  max_reprojection_error_px_ = tools::read_or<double>(
+    yaml["task2"], "max_reprojection_error_px",
+    (yaml["task2"] ? 5.0 : std::numeric_limits<double>::infinity()));
+  if (std::isnan(max_reprojection_error_px_) || max_reprojection_error_px_ <= 0)
+    throw std::invalid_argument("[Solver] Invalid reprojection threshold.");
+  auto finite_size = [](const std::vector<double> & values, size_t expected) {
+    return values.size() == expected && std::all_of(values.begin(), values.end(), [](double value) {
+             return std::isfinite(value);
+           });
+  };
 
   auto R_gimbal2imubody_data = tools::read<std::vector<double>>(yaml, "R_gimbal2imubody");
   auto R_camera2gimbal_data = tools::read<std::vector<double>>(yaml, "R_camera2gimbal");
   auto t_camera2gimbal_data = tools::read<std::vector<double>>(yaml, "t_camera2gimbal");
+  if (
+    !finite_size(R_gimbal2imubody_data, 9) || !finite_size(R_camera2gimbal_data, 9) ||
+    !finite_size(t_camera2gimbal_data, 3))
+    throw std::invalid_argument("[Solver] Invalid extrinsic array length/value.");
   R_gimbal2imubody_ = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>(R_gimbal2imubody_data.data());
   R_camera2gimbal_ = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>(R_camera2gimbal_data.data());
   t_camera2gimbal_ = Eigen::Matrix<double, 3, 1>(t_camera2gimbal_data.data());
 
+  for (const auto & R : {R_gimbal2imubody_, R_camera2gimbal_}) {
+    if (
+      (R.transpose() * R - Eigen::Matrix3d::Identity()).norm() > 0.02 ||
+      std::abs(R.determinant() - 1) > 0.02)
+      throw std::invalid_argument("[Solver] Extrinsic matrix is not a rotation.");
+  }
   auto camera_matrix_data = tools::read<std::vector<double>>(yaml, "camera_matrix");
   auto distort_coeffs_data = tools::read<std::vector<double>>(yaml, "distort_coeffs");
+  if (
+    !finite_size(camera_matrix_data, 9) || !finite_size(distort_coeffs_data, 5) ||
+    camera_matrix_data[0] <= 0 || camera_matrix_data[4] <= 0 ||
+    std::abs(camera_matrix_data[8] - 1) > 1e-8)
+    throw std::invalid_argument("[Solver] Invalid camera calibration.");
   Eigen::Matrix<double, 3, 3, Eigen::RowMajor> camera_matrix(camera_matrix_data.data());
   Eigen::Matrix<double, 1, 5> distort_coeffs(distort_coeffs_data.data());
   cv::eigen2cv(camera_matrix, camera_matrix_);
@@ -55,6 +82,8 @@ Solver::Solver(const std::string & config_path) : R_gimbal2world_(Eigen::Matrix3
   t_yaw2pitch_ = Eigen::Vector3d::Zero();
   if (yaml["t_yaw2pitch"]) {
     auto t_yaw2pitch_data = yaml["t_yaw2pitch"].as<std::vector<double>>();
+    if (!finite_size(t_yaw2pitch_data, 3))
+      throw std::invalid_argument("[Solver] Invalid yaw-to-pitch translation.");
     t_yaw2pitch_ = Eigen::Vector3d(t_yaw2pitch_data.data());
   }
 }
@@ -63,21 +92,42 @@ Eigen::Matrix3d Solver::R_gimbal2world() const { return R_gimbal2world_; }
 
 void Solver::set_R_gimbal2world(const Eigen::Quaterniond & q)
 {
-  Eigen::Matrix3d R_imubody2imuabs = q.toRotationMatrix();
+  if (!q.coeffs().allFinite() || q.norm() < 1e-6)
+    throw std::invalid_argument("[Solver] Invalid quaternion.");
+  Eigen::Matrix3d R_imubody2imuabs = q.normalized().toRotationMatrix();
   R_gimbal2world_ = R_gimbal2imubody_.transpose() * R_imubody2imuabs * R_gimbal2imubody_;
 }
 
 //solvePnP（获得姿态）
 void Solver::solve(Armor & armor) const
 {
+  if (armor.points.size() != 4) throw std::invalid_argument("[Solver] Four keypoints required.");
+  for (const auto & point : armor.points) {
+    if (!std::isfinite(point.x) || !std::isfinite(point.y))
+      throw std::invalid_argument("[Solver] Non-finite keypoint.");
+  }
+  if (!cv::isContourConvex(armor.points) || std::abs(cv::contourArea(armor.points)) < 1.0)
+    throw std::invalid_argument("[Solver] Degenerate keypoint quadrilateral.");
   const auto & object_points = (armor.type == ArmorType::big)       ? BIG_ARMOR_POINTS
                                : (armor.type == ArmorType::special) ? SPECIAL_ARMOR_POINTS
                                                                     : SMALL_ARMOR_POINTS;
 
   cv::Vec3d rvec, tvec;
-  cv::solvePnP(
-    object_points, armor.points, camera_matrix_, distort_coeffs_, rvec, tvec, false,
-    cv::SOLVEPNP_IPPE);
+  if (
+    !cv::solvePnP(
+      object_points, armor.points, camera_matrix_, distort_coeffs_, rvec, tvec, false,
+      cv::SOLVEPNP_IPPE) ||
+    !cv::checkRange(rvec) || !cv::checkRange(tvec) || tvec[2] <= 0)
+    throw std::runtime_error("[Solver] Invalid PnP solution.");
+  std::vector<cv::Point2f> projected;
+  cv::projectPoints(object_points, rvec, tvec, camera_matrix_, distort_coeffs_, projected);
+  double square_error = 0;
+  for (int i = 0; i < 4; ++i) {
+    auto delta = projected[i] - armor.points[i];
+    square_error += delta.dot(delta);
+  }
+  if (!std::isfinite(square_error) || std::sqrt(square_error / 4) > max_reprojection_error_px_)
+    throw std::runtime_error("[Solver] Excessive PnP reprojection error.");
 
   Eigen::Vector3d xyz_in_camera;
   cv::cv2eigen(tvec, xyz_in_camera);

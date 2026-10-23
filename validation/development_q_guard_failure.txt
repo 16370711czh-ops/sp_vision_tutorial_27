@@ -1,0 +1,95 @@
+Internal ctest changing into directory: C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_cmake_build
+UpdateCTestConfiguration  from :C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_cmake_build/DartConfiguration.tcl
+Parse Config file:C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_cmake_build/DartConfiguration.tcl
+UpdateCTestConfiguration  from :C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_cmake_build/DartConfiguration.tcl
+Parse Config file:C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_cmake_build/DartConfiguration.tcl
+Test project C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_cmake_build
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 1
+    Start 1: task2_legacy_regression
+
+1: Test command: C:\Users\hp\Documents\Codex\2026-10-21\w\work\task2_cmake_build\tests\task2_regression.exe
+1: Working Directory: C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_cmake_build/tests
+1: Test timeout computed to be: 1500
+1: libc++abi: terminating due to uncaught exception of type std::invalid_argument: [EKF] Invalid prediction dimensions or values.
+1/7 Test #1: task2_legacy_regression ..........Exit code 0xc0000409
+***Exception:   0.60 sec
+libc++abi: terminating due to uncaught exception of type std::invalid_argument: [EKF] Invalid prediction dimensions or values.
+
+test 2
+    Start 2: task2_model
+
+2: Test command: C:\Users\hp\Documents\Codex\2026-10-21\w\work\task2_cmake_build\tests\task2_acceptance.exe "model" "C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_submission/configs/task2.yaml"
+2: Working Directory: C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_cmake_build/tests
+2: Test timeout computed to be: 1500
+2: libc++abi: terminating due to uncaught exception of type std::invalid_argument: [EKF] Invalid prediction dimensions or values.
+2/7 Test #2: task2_model ......................Exit code 0xc0000409
+***Exception:   0.45 sec
+libc++abi: terminating due to uncaught exception of type std::invalid_argument: [EKF] Invalid prediction dimensions or values.
+
+test 3
+    Start 3: task2_tracking
+
+3: Test command: C:\Users\hp\Documents\Codex\2026-10-21\w\work\task2_cmake_build\tests\task2_acceptance.exe "tracking" "C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_submission/configs/task2.yaml"
+3: Working Directory: C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_cmake_build/tests
+3: Test timeout computed to be: 1500
+3: libc++abi: terminating due to uncaught exception of type std::invalid_argument: [EKF] Invalid prediction dimensions or values.
+3/7 Test #3: task2_tracking ...................Exit code 0xc0000409
+***Exception:   0.24 sec
+libc++abi: terminating due to uncaught exception of type std::invalid_argument: [EKF] Invalid prediction dimensions or values.
+
+test 4
+    Start 4: task2_pipeline
+
+4: Test command: C:\Users\hp\Documents\Codex\2026-10-21\w\work\task2_cmake_build\tests\task2_acceptance.exe "pipeline" "C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_submission/configs/task2.yaml"
+4: Working Directory: C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_cmake_build/tests
+4: Test timeout computed to be: 1500
+4: libc++abi: terminating due to uncaught exception of type std::invalid_argument: [EKF] Invalid prediction dimensions or values.
+4/7 Test #4: task2_pipeline ...................Exit code 0xc0000409
+***Exception:   0.24 sec
+libc++abi: terminating due to uncaught exception of type std::invalid_argument: [EKF] Invalid prediction dimensions or values.
+
+test 5
+    Start 5: task2_timing
+
+5: Test command: C:\Users\hp\Documents\Codex\2026-10-21\w\work\task2_cmake_build\tests\task2_acceptance.exe "timing" "C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_submission/configs/task2.yaml"
+5: Working Directory: C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_cmake_build/tests
+5: Test timeout computed to be: 1500
+5: PASS timing: 14 checks
+5/7 Test #5: task2_timing .....................   Passed    0.05 sec
+test 6
+    Start 6: task2_config
+
+6: Test command: C:\Users\hp\Documents\Codex\2026-10-21\w\work\task2_cmake_build\tests\task2_acceptance.exe "config" "C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_submission/configs/task2.yaml"
+6: Working Directory: C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_cmake_build/tests
+6: Test timeout computed to be: 1500
+6: PASS config: 7 checks
+6/7 Test #6: task2_config .....................   Passed    0.02 sec
+test 7
+    Start 7: task2_solver_roundtrip
+
+7: Test command: C:\Users\hp\Documents\Codex\2026-10-21\w\work\task2_cmake_build\tests\task2_solver_roundtrip.exe "C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_submission/configs/task2.yaml"
+7: Working Directory: C:/Users/hp/Documents/Codex/2026-10-21/w/work/task2_cmake_build/tests
+7: Test timeout computed to be: 1500
+7: PASS solver_roundtrip: 28 checks
+7/7 Test #7: task2_solver_roundtrip ...........   Passed    0.61 sec
+
+43% tests passed, 4 tests failed out of 7
+
+Total Test time (real) =   2.23 sec
+
+The following tests FAILED:
+	  1 - task2_legacy_regression (Exit code 0xc0000409
+)
+	  2 - task2_model (Exit code 0xc0000409
+)
+	  3 - task2_tracking (Exit code 0xc0000409
+)
+	  4 - task2_pipeline (Exit code 0xc0000409
+)
+Errors while running CTest

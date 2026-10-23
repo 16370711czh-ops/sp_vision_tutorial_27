@@ -31,6 +31,7 @@ public:
   std::optional<cv::Point2f> world2pixel(const Eigen::Vector3d & world_point) const;
 
 private:
+  double max_reprojection_error_px_;
   Eigen::Vector3d t_yaw2pitch_;
   cv::Mat camera_matrix_;
   cv::Mat distort_coeffs_;

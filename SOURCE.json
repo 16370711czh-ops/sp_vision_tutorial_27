@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/16370711czh-ops/sp_vision_tutorial_27",
+  "base_branch": "final",
+  "base_commit": "88f877caa395191a5789a7a99eebd486b8b498f9",
+  "date": "2026-10-22",
+  "task2_ctest_suites": 7,
+  "task2_checks": 41384,
+  "merged_ctest_suites": 9,
+  "task1_compatibility_checks": 1464,
+  "task3_compatibility_checks": 35600,
+  "solver_runtime_checks": 28,
+  "linux_primary_objects": 16,
+  "linux_merged_compatibility_objects": 3,
+  "full_robot_link_verified": false,
+  "hardware_tests_executed": false,
+  "default_fire": false,
+  "review": "TASK2_REVIEW.md",
+  "tests": "TASK2_TEST_REPORT.md",
+  "runbook": "TASK2_RUNBOOK.md"
+}

@@ -11,7 +11,7 @@
 #include <tuple>
 
 #include "serial/serial.h"
-#include "tools/thread_safe_queue.hpp"
+#include "tools/quaternion_history.hpp"
 
 namespace io
 {
@@ -42,13 +42,13 @@ struct __attribute__((packed)) VisionToGimbal
   uint8_t head[2] = {'S', 'P'};
   uint8_t mode;  // 0: 不控制, 1: 控制云台但不开火，2: 控制云台且开火
   float yaw;
-  float yaw_vel=0.0f;  //保持0即可
-  float yaw_acc=0.0f;  //保持0即可
+  float yaw_vel = 0.0f;  //保持0即可
+  float yaw_acc = 0.0f;  //保持0即可
   float pitch;
-  float pitch_vel=0.0f;  //保持0即可
-  float pitch_acc=0.0f;  //保持0即可
-  uint8_t
-    target=0;  //0:英雄,1:工程,2:3号步兵,3:4号步兵,4:5号步兵,5:哨兵,6:前哨,7:基地,8:无目标,9:小符,10:大符
+  float pitch_vel = 0.0f;  //保持0即可
+  float pitch_acc = 0.0f;  //保持0即可
+  uint8_t target =
+    0;  //0:英雄,1:工程,2:3号步兵,3:4号步兵,4:5号步兵,5:哨兵,6:前哨,7:基地,8:无目标,9:小符,10:大符
 
   uint16_t crc16;
 };
@@ -84,6 +84,20 @@ struct GimbalState
   uint8_t game_progress;
 };
 
+struct GimbalFeedback
+{
+  GimbalState state{};
+  GimbalMode mode = GimbalMode::IDLE;
+  std::chrono::steady_clock::time_point timestamp{};
+  bool valid = false;
+};
+
+struct GimbalCommandStatus
+{
+  VisionToGimbal command{};
+  bool written = false;  // 仅表示写入串口成功，不是电控确认或发弹确认
+};
+
 class Gimbal
 {
 public:
@@ -93,10 +107,15 @@ public:
 
   GimbalMode mode() const;
   GimbalState state() const;
+  GimbalFeedback feedback() const;
+  GimbalCommandStatus last_command();
   std::string str(GimbalMode mode) const;
   Eigen::Quaterniond q(std::chrono::steady_clock::time_point t);
 
-  void send(bool control, bool fire, float yaw, float pitch);
+  bool try_q(
+    std::chrono::steady_clock::time_point t, Eigen::Quaterniond & q,
+    std::chrono::milliseconds timeout = std::chrono::milliseconds(20));
+  void send(bool control, bool fire, float yaw, float pitch, uint8_t target = 0);
 
 private:
   serial::Serial serial_;
@@ -108,13 +127,19 @@ private:
   std::mutex serial_mutex_;
   std::atomic<bool> is_connected_{false};
 
-  GimbalToVision rx_data_;
-  VisionToGimbal tx_data_;
+  GimbalToVision rx_data_{};
+  VisionToGimbal tx_data_{};
 
   GimbalMode mode_ = GimbalMode::IDLE;
-  GimbalState state_;
-  tools::ThreadSafeQueue<std::tuple<Eigen::Quaterniond, std::chrono::steady_clock::time_point>>
-    queue_{1000};
+  GimbalState state_{};
+  std::chrono::steady_clock::time_point feedback_time_{}, command_time_{};
+  bool feedback_valid_ = false;
+  bool last_write_ok_ = false;
+  bool stop_pending_ = false;
+  std::chrono::milliseconds command_timeout_{0};
+  tools::QuaternionHistory poses_;
+  bool write_command_locked();
+  void expire_command();
 
   bool read(uint8_t * buffer, size_t size);
   void read_thread();

@@ -1,4 +1,5 @@
 #include "crc.hpp"
+#include <cstddef>
 
 constexpr uint8_t CRC8_INIT = 0xff;
 const uint8_t CRC8_TABLE[256] = {

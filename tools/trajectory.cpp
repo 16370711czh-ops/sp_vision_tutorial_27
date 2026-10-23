@@ -7,8 +7,8 @@ namespace tools
 constexpr double g = 9.794;
 constexpr int MAX_ITER = 100;
 
-constexpr double k1 = (0.47 * 1.169 * M_PI * 0.02125 * 0.02125) / (2 * 0.041);
-constexpr double k2 = (0.47 * 1.169 * M_PI * 0.0085 * 0.0085) / (2 * 0.003);
+constexpr double k1 = (0.47 * 1.169 * 3.14159265358979323846 * 0.02125 * 0.02125) / (2 * 0.041);
+constexpr double k2 = (0.47 * 1.169 * 3.14159265358979323846 * 0.0085 * 0.0085) / (2 * 0.003);
 
 /* 
   假设空气阻力 f = k1 * v, 下方是k1的组成
@@ -20,6 +20,10 @@ constexpr double k2 = (0.47 * 1.169 * M_PI * 0.0085 * 0.0085) / (2 * 0.003);
 
 Trajectory::Trajectory(const double v0, const double d, const double h, int mode)
 {
+  if (
+    !std::isfinite(v0) || !std::isfinite(d) || !std::isfinite(h) || v0 <= 0 || d <= 1e-6 ||
+    mode < 1 || mode > 3)
+    return;
   if (mode == 1) {  // 不考虑空气阻力
     auto a = g * d * d / (2 * v0 * v0);
     auto b = -d;
@@ -33,7 +37,7 @@ Trajectory::Trajectory(const double v0, const double d, const double h, int mode
 
     unsolvable = false;
     auto tan_pitch_1 = (-b + std::sqrt(delta)) / (2 * a);
-    auto tan_pitch_2 = (-b - std::sqrt(delta)) / (2 * a);
+    auto tan_pitch_2 = (2 * c) / (-b + std::sqrt(delta));  // 避免低弹道解相减消去
     auto pitch_1 = std::atan(tan_pitch_1);
     auto pitch_2 = std::atan(tan_pitch_2);
     auto t_1 = d / (v0 * std::cos(pitch_1));
@@ -54,7 +58,7 @@ Trajectory::Trajectory(const double v0, const double d, const double h, int mode
     double flyTime;
     for (int i = 0; i < MAX_ITER; i++) {
       // 计算炮弹的飞行时间
-      flyTime = (pow(M_E, k1 * center_distance) - 1) / (k1 * v0 * cos(theta));
+      flyTime = (std::exp(k1 * center_distance) - 1) / (k1 * v0 * cos(theta));
       delta_z = h - v0 * sin(theta) * flyTime / cos(theta) +
                 0.5 * g * flyTime * flyTime / cos(theta) / cos(theta);
       if (fabs(delta_z) < 1e-6) break;
@@ -77,7 +81,7 @@ Trajectory::Trajectory(const double v0, const double d, const double h, int mode
     double flyTime;
     for (int i = 0; i < MAX_ITER; i++) {
       // 计算炮弹的飞行时间
-      flyTime = (pow(M_E, k2 * center_distance) - 1) / (k2 * v0 * cos(theta));
+      flyTime = (std::exp(k2 * center_distance) - 1) / (k2 * v0 * cos(theta));
       delta_z = h - v0 * sin(theta) * flyTime / cos(theta) +
                 0.5 * g * flyTime * flyTime / cos(theta) / cos(theta);
       if (fabs(delta_z) < 1e-6) break;

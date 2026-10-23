@@ -107,10 +107,7 @@ bool HikRobot::try_read_for(
   return true;
 }
 
-bool HikRobot::is_alive() const
-{
-  return capturing_.load();
-}
+bool HikRobot::is_alive() const { return capturing_.load(); }
 
 void HikRobot::capture_start()
 {
@@ -206,33 +203,38 @@ void HikRobot::capture_start()
         break;
       }
 
-      auto timestamp = std::chrono::steady_clock::now();
-      cv::Mat img(cv::Size(raw.stFrameInfo.nWidth, raw.stFrameInfo.nHeight), CV_8U, raw.pBufAddr);
+      try {
+        auto timestamp = std::chrono::steady_clock::now();
+        cv::Mat img(cv::Size(raw.stFrameInfo.nWidth, raw.stFrameInfo.nHeight), CV_8U, raw.pBufAddr);
 
-      cvt_param.nWidth = raw.stFrameInfo.nWidth;
-      cvt_param.nHeight = raw.stFrameInfo.nHeight;
+        cvt_param.nWidth = raw.stFrameInfo.nWidth;
+        cvt_param.nHeight = raw.stFrameInfo.nHeight;
 
-      cvt_param.pSrcData = raw.pBufAddr;
-      cvt_param.nSrcDataLen = raw.stFrameInfo.nFrameLen;
-      cvt_param.enSrcPixelType = raw.stFrameInfo.enPixelType;
+        cvt_param.pSrcData = raw.pBufAddr;
+        cvt_param.nSrcDataLen = raw.stFrameInfo.nFrameLen;
+        cvt_param.enSrcPixelType = raw.stFrameInfo.enPixelType;
 
-      cvt_param.pDstBuffer = img.data;
-      cvt_param.nDstBufferSize = img.total() * img.elemSize();
-      cvt_param.enDstPixelType = PixelType_Gvsp_BGR8_Packed;
+        cvt_param.pDstBuffer = img.data;
+        cvt_param.nDstBufferSize = img.total() * img.elemSize();
+        cvt_param.enDstPixelType = PixelType_Gvsp_BGR8_Packed;
 
-      // ret = MV_CC_ConvertPixelType(handle_, &cvt_param);
-      const auto & frame_info = raw.stFrameInfo;
-      auto pixel_type = frame_info.enPixelType;
-      cv::Mat dst_image;
-      const static std::unordered_map<MvGvspPixelType, cv::ColorConversionCodes> type_map = {
-        {PixelType_Gvsp_BayerGR8, cv::COLOR_BayerGR2RGB},
-        {PixelType_Gvsp_BayerRG8, cv::COLOR_BayerRG2RGB},
-        {PixelType_Gvsp_BayerGB8, cv::COLOR_BayerGB2RGB},
-        {PixelType_Gvsp_BayerBG8, cv::COLOR_BayerBG2RGB}};
-      cv::cvtColor(img, dst_image, type_map.at(pixel_type));
-      img = dst_image;
+        // ret = MV_CC_ConvertPixelType(handle_, &cvt_param);
+        const auto & frame_info = raw.stFrameInfo;
+        auto pixel_type = frame_info.enPixelType;
+        cv::Mat dst_image;
+        const static std::unordered_map<MvGvspPixelType, cv::ColorConversionCodes> type_map = {
+          {PixelType_Gvsp_BayerGR8, cv::COLOR_BayerGR2RGB},
+          {PixelType_Gvsp_BayerRG8, cv::COLOR_BayerRG2RGB},
+          {PixelType_Gvsp_BayerGB8, cv::COLOR_BayerGB2RGB},
+          {PixelType_Gvsp_BayerBG8, cv::COLOR_BayerBG2RGB}};
+        cv::cvtColor(img, dst_image, type_map.at(pixel_type));
+        img = dst_image;
 
-      queue_.push({img, timestamp});
+        queue_.replace({img, timestamp});  // 保留最新图像，避免处理积压的旧帧
+
+      } catch (const std::exception & e) {
+        tools::logger()->warn("[Camera] Frame conversion rejected: {}", e.what());
+      }
 
       ret = MV_CC_FreeImageBuffer(handle_, &raw);
       if (ret != MV_OK) {

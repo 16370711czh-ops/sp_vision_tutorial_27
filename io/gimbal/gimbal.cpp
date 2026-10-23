@@ -1,6 +1,8 @@
 #include "gimbal.hpp"
 
 #include <chrono>
+#include <cmath>
+#include <stdexcept>
 #include <thread>
 
 #include "tools/crc.hpp"
@@ -14,7 +16,10 @@ Gimbal::Gimbal(const std::string & config_path)
 {
   auto yaml = tools::load(config_path);
   auto com_port = tools::read<std::string>(yaml, "com_port");
-  bool hangging_shoot = tools::read_or<bool>(yaml, "hangging_shoot", false);
+  auto command_timeout_ms = tools::read_or<int>(yaml, "command_timeout_ms", 0);
+  if (command_timeout_ms < 0 || command_timeout_ms > 1000)
+    throw std::invalid_argument("Invalid command timeout.");
+  command_timeout_ = std::chrono::milliseconds(command_timeout_ms);
   // 显式读取波特率，默认为 921600
   int baudrate = tools::read_or<int>(yaml, "baudrate", 921600);
 
@@ -29,18 +34,27 @@ Gimbal::Gimbal(const std::string & config_path)
     tools::logger()->info("[Gimbal] Serial opened at {} baudrate.", baudrate);
   } catch (const std::exception & e) {
     tools::logger()->error("[Gimbal] Failed to open serial: {}", e.what());
-    exit(1);
+    throw;
   }
 
   thread_ = std::thread(&Gimbal::read_thread, this);
 
   // 等待首包，确保链路通畅
-  queue_.pop();
+  if (!poses_.wait_for_data(std::chrono::milliseconds(1000))) {
+    quit_ = true;
+    if (thread_.joinable()) thread_.join();
+    if (serial_.isOpen()) serial_.close();
+    throw std::runtime_error("[Gimbal] No valid feedback within 1s.");
+  }
   tools::logger()->info("[Gimbal] First q received.");
 }
 
 Gimbal::~Gimbal()
 {
+  try {
+    send(false, false, 0, 0, 8);
+  } catch (...) {
+  }
   quit_ = true;
   if (thread_.joinable()) thread_.join();
   std::lock_guard<std::mutex> lock(serial_mutex_);
@@ -50,7 +64,10 @@ Gimbal::~Gimbal()
 GimbalMode Gimbal::mode() const
 {
   std::lock_guard<std::mutex> lock(mutex_);
-  return mode_;
+  return feedback_valid_ &&
+             tools::delta_time(std::chrono::steady_clock::now(), feedback_time_) <= 0.1
+           ? mode_
+           : GimbalMode::IDLE;
 }
 
 GimbalState Gimbal::state() const
@@ -59,31 +76,70 @@ GimbalState Gimbal::state() const
   return state_;
 }
 
-void Gimbal::send(bool control, bool fire, float yaw, float pitch)
+GimbalFeedback Gimbal::feedback() const
 {
-  if (!std::isfinite(yaw) || !std::isfinite(pitch)) {
-    tools::logger()->error("[Gimbal] Invalid control data detected (NaN/Inf)! Packet dropped.");
+  std::lock_guard<std::mutex> lock(mutex_);
+  return {state_, mode_, feedback_time_, feedback_valid_};
+}
+
+GimbalCommandStatus Gimbal::last_command()
+{
+  std::lock_guard<std::mutex> lock(serial_mutex_);
+  return {tx_data_, last_write_ok_};
+}
+
+void Gimbal::send(bool control, bool fire, float yaw, float pitch, uint8_t target)
+{
+  auto sample = feedback();
+  auto age = tools::delta_time(std::chrono::steady_clock::now(), sample.timestamp);
+  if (
+    !sample.valid || age < 0 || age > 0.1 || sample.mode != GimbalMode::AUTO_AIM ||
+    !std::isfinite(yaw) || !std::isfinite(pitch)) {
+    control = fire = false;
+    yaw = pitch = 0;
+    target = 8;
+  }
+  std::lock_guard<std::mutex> lock(serial_mutex_);
+  if (!is_connected_ || !serial_.isOpen()) {
+    last_write_ok_ = false;
     return;
   }
-
-  std::lock_guard<std::mutex> lock(serial_mutex_);
-  if (!is_connected_ || !serial_.isOpen()) return;
-
   tx_data_.mode = control ? (fire ? 2 : 1) : 0;
+  tx_data_.target = target;
   tx_data_.yaw = yaw;
-  tx_data_.yaw_vel = 0.0f;  //保持0即可
-  tx_data_.yaw_acc = 0.0f;  //保持0即可
   tx_data_.pitch = pitch;
-  tx_data_.pitch_vel = 0.0f;  //保持0即可
-  tx_data_.pitch_acc = 0.0f;  //保持0即可
+  tx_data_.yaw_vel = tx_data_.yaw_acc = tx_data_.pitch_vel = tx_data_.pitch_acc = 0;
+  last_write_ok_ = write_command_locked();
+  if (last_write_ok_) {
+    command_time_ = std::chrono::steady_clock::now();
+    stop_pending_ = false;
+  }
+}
+
+bool Gimbal::write_command_locked()
+{
   tx_data_.crc16 = tools::get_crc16(
     reinterpret_cast<uint8_t *>(&tx_data_), sizeof(tx_data_) - sizeof(tx_data_.crc16));
-
   try {
-    serial_.write(reinterpret_cast<uint8_t *>(&tx_data_), sizeof(tx_data_));
+    return serial_.write(reinterpret_cast<uint8_t *>(&tx_data_), sizeof(tx_data_)) ==
+           sizeof(tx_data_);
   } catch (const std::exception & e) {
-    tools::logger()->warn("[Gimbal] Failed to write serial: {}", e.what());
+    tools::logger()->warn("[Gimbal] Write failed: {}", e.what());
+    return false;
   }
+}
+
+void Gimbal::expire_command()
+{
+  std::lock_guard<std::mutex> lock(serial_mutex_);
+  if (command_timeout_.count() == 0 || (tx_data_.mode == 0 && !stop_pending_) || !serial_.isOpen())
+    return;
+  if (std::chrono::steady_clock::now() - command_time_ <= command_timeout_) return;
+  tx_data_.mode = 0;
+  tx_data_.target = 8;
+  last_write_ok_ = write_command_locked();
+  stop_pending_ = !last_write_ok_;
+  if (last_write_ok_) tools::logger()->warn("[Gimbal] Command expired; control disabled.");
 }
 
 std::string Gimbal::str(GimbalMode mode) const
@@ -106,18 +162,17 @@ std::string Gimbal::str(GimbalMode mode) const
 
 Eigen::Quaterniond Gimbal::q(std::chrono::steady_clock::time_point t)
 {
-  while (true) {
-    auto [q_a, t_a] = queue_.pop();
-    auto [q_b, t_b] = queue_.front();
-    auto t_ab = tools::delta_time(t_a, t_b);
-    auto t_ac = tools::delta_time(t_a, t);
-    auto k = t_ac / t_ab;
-    Eigen::Quaterniond q_c = q_a.slerp(k, q_b).normalized();
-    if (t < t_a) return q_c;
-    if (!(t_a < t && t <= t_b)) continue;
+  Eigen::Quaterniond result;
+  if (!try_q(t, result, std::chrono::milliseconds(100)))
+    throw std::runtime_error("[Gimbal] Pose unavailable at image timestamp.");
+  return result;
+}
 
-    return q_c;
-  }
+bool Gimbal::try_q(
+  std::chrono::steady_clock::time_point t, Eigen::Quaterniond & q,
+  std::chrono::milliseconds timeout)
+{
+  return poses_.sample(t, q, timeout);
 }
 
 bool Gimbal::read(uint8_t * buffer, size_t size)
@@ -138,6 +193,7 @@ void Gimbal::read_thread()
   const auto timeout_threshold = std::chrono::seconds(1);
 
   while (!quit_) {
+    expire_command();
     // 1. 硬件 Watchdog：如果超过 2 秒没收到合法包，且串口确实打开，触发重连
     auto now = std::chrono::steady_clock::now();
     if (now - last_valid_packet_time > timeout_threshold) {
@@ -177,10 +233,17 @@ void Gimbal::read_thread()
     auto t = std::chrono::steady_clock::now();
 
     Eigen::Quaterniond q(rx_data_.q[0], rx_data_.q[1], rx_data_.q[2], rx_data_.q[3]);
-    queue_.push({q, t});
+    if (
+      !q.coeffs().allFinite() || q.norm() < 1e-6 || !std::isfinite(rx_data_.yaw) ||
+      !std::isfinite(rx_data_.pitch) || !std::isfinite(rx_data_.yaw_vel) ||
+      !std::isfinite(rx_data_.pitch_vel) || !std::isfinite(rx_data_.bullet_speed))
+      continue;
+    if (!poses_.push(q, t)) continue;
 
     std::lock_guard<std::mutex> lock(mutex_);
 
+    feedback_valid_ = true;
+    feedback_time_ = t;
     state_.yaw = rx_data_.yaw;
     state_.yaw_vel = rx_data_.yaw_vel;
     state_.pitch = rx_data_.pitch;
@@ -220,13 +283,19 @@ void Gimbal::read_thread()
 void Gimbal::reconnect()
 {
   is_connected_ = false;
+  poses_.clear();
+  {
+    std::lock_guard<std::mutex> state_lock(mutex_);
+    feedback_valid_ = false;
+    mode_ = GimbalMode::IDLE;
+  }
   std::lock_guard<std::mutex> lock(serial_mutex_);
 
   try {
     if (serial_.isOpen()) serial_.close();
     std::this_thread::sleep_for(std::chrono::seconds(1));
     serial_.open();
-    queue_.clear();
+
     is_connected_ = true;
     tools::logger()->info("[Gimbal] Reconnected serial successfully.");
   } catch (const std::exception & e) {

@@ -1,0 +1,22 @@
+name: Task2 offline acceptance
+on:
+  push:
+    branches: [final]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  offline:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install offline dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build g++ libeigen3-dev libopencv-dev libyaml-cpp-dev libfmt-dev libspdlog-dev nlohmann-json3-dev
+      - name: Configure and build production estimation code
+        run: |
+          cmake -S . -B build-offline -G Ninja -DBUILD_VISION_APP=OFF -DBUILD_TESTING=ON
+          cmake --build build-offline -j2
+      - name: Run offline acceptance without camera, serial or firing
+        run: ctest --test-dir build-offline --output-on-failure

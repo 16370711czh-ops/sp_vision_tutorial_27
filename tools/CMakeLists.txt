@@ -11,3 +11,5 @@ add_library(tools OBJECT
     logger.cpp
     crc.cpp
 )
+
+target_link_libraries(tools PUBLIC task2_dependencies ${OpenCV_LIBS})

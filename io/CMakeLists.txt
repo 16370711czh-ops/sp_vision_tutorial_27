@@ -1,24 +1,17 @@
-cmake_minimum_required(VERSION 3.16)
-
-find_package(yaml-cpp REQUIRED)
-
 add_subdirectory(serial)
-
-# 创建目标 io
-add_library(io STATIC 
-    hikrobot/hikrobot.cpp    
-    camera.cpp
-    gimbal/gimbal.cpp
-)
-
-# hikrobot
+add_library(io STATIC hikrobot/hikrobot.cpp camera.cpp gimbal/gimbal.cpp)
 target_include_directories(io PUBLIC hikrobot/include)
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-  target_link_directories(io PUBLIC hikrobot/lib/amd64)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
-  target_link_directories(io PUBLIC hikrobot/lib/arm64)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+  set(MVS_LIBRARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/hikrobot/lib/amd64")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
+  set(MVS_LIBRARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/hikrobot/lib/arm64")
 else()
-  message(FATAL_ERROR "Unsupported architecture: ${CMAKE_HOST_SYSTEM_PROCESSOR}!")
+  message(FATAL_ERROR "Unsupported MVS architecture: ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
+find_library(MVS_LIBRARY MvCameraControl PATHS "${MVS_LIBRARY_DIR}" NO_DEFAULT_PATH)
+find_library(LIBUSB_LIBRARY NAMES usb-1.0)
+target_link_libraries(io PUBLIC task2_dependencies serial "${MVS_LIBRARY}" "${LIBUSB_LIBRARY}")
 
-target_link_libraries(io MvCameraControl usb-1.0 yaml-cpp serial)
+if(NOT MVS_LIBRARY OR NOT LIBUSB_LIBRARY)
+  message(FATAL_ERROR "MVS SDK or libusb-1.0 library missing")
+endif()

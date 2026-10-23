@@ -1,5 +1,8 @@
 .vscode/
-.github/
+.github/*
+!.github/workflows/
+.github/workflows/*
+!.github/workflows/task2.yml
 build/
 Camera/
 logs/

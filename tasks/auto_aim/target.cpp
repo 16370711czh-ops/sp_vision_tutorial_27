@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <numeric>
+#include <stdexcept>
 
 #include "tools/logger.hpp"
 #include "tools/math_tools.hpp"
@@ -10,28 +12,60 @@
 namespace auto_aim
 {
 Target::Target(
-  const Armor & armor, std::chrono::steady_clock::time_point t, double radius, int armor_num)
-: name(armor.name),
-  armor_type(armor.type),
+  const Armor & armor, std::chrono::steady_clock::time_point t, double radius, int armor_num,
+  const TargetConfig & config)
+: Target(
+    Eigen::Vector4d(
+      armor.xyz_in_world[0], armor.xyz_in_world[1], armor.xyz_in_world[2], armor.ypr_in_world[0]),
+    armor.name, armor.type, t, radius, armor_num, config)
+{
+}
+
+Target::Target(
+  const Eigen::Vector4d & xyza, ArmorName name, ArmorType type,
+  std::chrono::steady_clock::time_point t, double radius, int armor_num,
+  const TargetConfig & config)
+: name(name),
+  armor_type(type),
+  priority(ArmorPriority::first),
   jumped(false),
   last_id(0),
   isinit(true),
-  armor_num_(armor_num > 0 ? armor_num : (armor.name == ArmorName::outpost ? 3 : 4)),
+  config_(config),
+  armor_num_(armor_num > 0 ? armor_num : (name == ArmorName::outpost ? 3 : 4)),
   switch_count_(0),
   update_count_(0),
   is_switch_(false),
   is_converged_(false),
   t_(t)
 {
-  auto r = radius > 0.0 ? radius : (armor.name == ArmorName::outpost ? 0.2765 : 0.2);
-  priority = armor.priority;
-  const Eigen::VectorXd & xyz = armor.xyz_in_world;
-  const Eigen::VectorXd & ypr = armor.ypr_in_world;
+  if (
+    !xyza.allFinite() || !std::isfinite(xyza.head<3>().norm()) || xyza.head<3>().norm() < 0.1 ||
+    xyza.head<3>().norm() > 100 || (armor_num_ != 2 && armor_num_ != 3 && armor_num_ != 4) ||
+    !std::isfinite(config_.max_nis) || config_.max_nis <= 0 ||
+    !std::isfinite(config_.max_prediction_dt) || config_.max_prediction_dt <= 0 ||
+    !std::isfinite(radius))
+    throw std::invalid_argument("[Target] Invalid initial pose/config.");
+  auto r = radius > 0.0 ? radius : (name == ArmorName::outpost ? 0.2765 : 0.2);
+  for (auto variance :
+       {config_.radius_variance, config_.radius_diff_variance, config_.height_diff_variance,
+        config_.outpost_radius_variance}) {
+    if (!std::isfinite(variance) || variance <= 0)
+      throw std::invalid_argument("[Target] Invalid geometry covariance.");
+  }
+  for (auto variance :
+       {config_.acceleration_variance, config_.angular_acceleration_variance,
+        config_.z_acceleration_variance, config_.outpost_center_noise,
+        config_.outpost_angular_acceleration_variance}) {
+    if (!std::isfinite(variance) || variance < 0)
+      throw std::invalid_argument("[Target] Invalid process noise.");
+  }
+  if (r <= 0.05 || r >= 0.5) throw std::invalid_argument("[Target] Invalid initial radius.");
 
   // 旋转中心的坐标
-  auto center_x = xyz[0] + r * std::cos(ypr[0]);
-  auto center_y = xyz[1] + r * std::sin(ypr[0]);
-  auto center_z = xyz[2];
+  auto center_x = xyza[0] + r * std::cos(xyza[3]);
+  auto center_y = xyza[1] + r * std::sin(xyza[3]);
+  auto center_z = xyza[2];
 
   // x vx y vy z vz a w r l h
   // a: angle
@@ -39,19 +73,23 @@ Target::Target(
   // tips for outpost:
   // l: dh1 for outpost / r2 - r1 for vehicles
   // h: dh2 for outpost / z2 - z1 for vehicles
-  Eigen::VectorXd x0{{center_x, 0, center_y, 0, center_z, 0, ypr[0], 0, r, 0, 0}};  //初始化预测量
+  Eigen::VectorXd x0{
+    {center_x, 0, center_y, 0, center_z, 0, std::remainder(xyza[3], 2 * CV_PI), 0, r, 0, 0}};
   Eigen::VectorXd P0_dig_car{
-    {1, 64, 1, 64, 1, 64, 0.4, 100, 0, 0,
-     0}};  // Task_2 TODO: 根据实际情况，调整“后三项”预测量协方差矩阵参数
+    {1, 64, 1, 64, 1, 64, 0.4, 100, config_.radius_variance, config_.radius_diff_variance,
+     config_.height_diff_variance}};
 
-  // Task_3 TODO: 为前哨站建立专有的初始状预测量及其协方差矩阵参数（P0_dig_outpost）
-
-  Eigen::Matrix<double, 11, 11> P0 = P0_dig_car.asDiagonal();
+  // 前哨站三板共用已知半径；从0估计转速，不将2.5rad/s写成观测答案。
+  Eigen::VectorXd P0_dig_outpost{
+    {0.1, 0.01, 0.1, 0.01, 0.1, 0.01, 0.4, 100, config_.outpost_radius_variance,
+     config_.radius_diff_variance, config_.height_diff_variance}};
+  Eigen::Matrix<double, 11, 11> P0 =
+    (is_layered_outpost() ? P0_dig_outpost : P0_dig_car).asDiagonal();
 
   // 防止夹角求和出现异常值
   auto x_add = [](const Eigen::VectorXd & a, const Eigen::VectorXd & b) -> Eigen::VectorXd {
     Eigen::VectorXd c = a + b;
-    c[6] = tools::limit_rad(c[6]);
+    c[6] = std::remainder(c[6], 2 * CV_PI);
     return c;
   };
 
@@ -67,6 +105,8 @@ void Target::predict(std::chrono::steady_clock::time_point t)
 
 void Target::predict(double dt)
 {
+  if (!std::isfinite(dt) || dt < 0 || dt > config_.max_prediction_dt)
+    throw std::invalid_argument("[Target] Invalid dt.");
   // 状态转移矩阵
   // clang-format off
   Eigen::MatrixXd F{
@@ -84,14 +124,19 @@ void Target::predict(double dt)
   };
   // clang-format on
 
+  if (is_layered_outpost()) {
+    // 固定中心模型：保留11维接口，但不让闲置的vx/vy/vz推进中心。
+    F(0, 1) = F(2, 3) = F(4, 5) = 0;
+  }
+
   // Piecewise White Noise Model
   // https://github.com/rlabbe/Kalman-and-Bayesian-Filters-in-Python/blob/master/07-Kalman-Filter-Math.ipynb
   double v1, v2;
 
-  // Task_2 TODO: 根据实际情况，调整v1与v2
-  v1 = 1;           // 加速度方差
-  v2 = 1;           // 角加速度方差
-  double v1_z = 1;  // z轴加速度方差
+  // 任务二：固定位置的转靶，中心运动较小，但允许角速度变化。
+  v1 = config_.acceleration_variance;
+  v2 = config_.angular_acceleration_variance;
+  double v1_z = config_.z_acceleration_variance;
 
   auto a = dt * dt * dt * dt / 4;
   auto b = dt * dt * dt / 2;
@@ -113,6 +158,15 @@ void Target::predict(double dt)
   };
   // clang-format on
 
+  if (is_layered_outpost()) {
+    Q.setZero();
+    Q(0, 0) = Q(2, 2) = Q(4, 4) = config_.outpost_center_noise * dt;
+    auto angular_noise = config_.outpost_angular_acceleration_variance;
+    Q(6, 6) = a * angular_noise;
+    Q(6, 7) = Q(7, 6) = b * angular_noise;
+    Q(7, 7) = c * angular_noise;
+  }
+
   // 防止夹角求和出现异常值
   auto f = [&](const Eigen::VectorXd & x) -> Eigen::VectorXd {
     Eigen::VectorXd x_prior = F * x;
@@ -125,70 +179,79 @@ void Target::predict(double dt)
 
 void Target::update(const Armor & armor)
 {
-  // 装甲板匹配
-  int id;
-  auto min_angle_error = 1e10;
-  const std::vector<Eigen::Vector4d> & xyza_list = armor_xyza_list();
-
-  std::vector<std::pair<Eigen::Vector4d, int>> xyza_i_list;
-  for (int i = 0; i < armor_num_; i++) {
-    xyza_i_list.push_back({xyza_list[i], i});
-  }
-
-  std::sort(
-    xyza_i_list.begin(), xyza_i_list.end(),
-    [](const std::pair<Eigen::Vector4d, int> & a, const std::pair<Eigen::Vector4d, int> & b) {
-      Eigen::Vector3d ypd1 = tools::xyz2ypd(a.first.head(3));
-      Eigen::Vector3d ypd2 = tools::xyz2ypd(b.first.head(3));
-      return ypd1[2] < ypd2[2];
-    });
-
-  // 取前3个distance最小的装甲板
-  for (int i = 0; i < 3; i++) {
-    const auto & xyza = xyza_i_list[i].first;
-    Eigen::Vector3d ypd = tools::xyz2ypd(xyza.head(3));
-    auto angle_error = std::abs(tools::limit_rad(armor.ypr_in_world[0] - xyza[3])) +
-                       std::abs(tools::limit_rad(armor.ypd_in_world[0] - ypd[0]));
-
-    if (std::abs(angle_error) < std::abs(min_angle_error)) {
-      id = xyza_i_list[i].second;
-      min_angle_error = angle_error;
-    }
-  }
-
-  if (id != 0) jumped = true;
-
-  if (id != last_id) {
-    is_switch_ = true;
-    rlh_initialized_ = true;
-  } else {
-    is_switch_ = false;
-  }
-
-  if (is_switch_) switch_count_++;
-
-  last_id = id;
-  update_count_++;
-  update_convergency();
-
-  update_ypda(armor, id);
+  update(
+    Eigen::Vector4d(
+      armor.xyz_in_world[0], armor.xyz_in_world[1], armor.xyz_in_world[2], armor.ypr_in_world[0]));
 }
 
-void Target::update_ypda(const Armor & armor, int id)
+void Target::update(const Eigen::Vector4d & observation)
 {
-  //观测jacobi
-  Eigen::MatrixXd H = h_jacobian(ekf_.x, id);
-
-  H.block<3, 1>(0, 6).setZero();
-
-  // 首次换板前冻结几何参数；换板后允许单板观测更新半径及高度差。
-  if (!rlh_initialized_) {
-    H.block<4, 3>(0, 8).setZero();
+  if (!observation.allFinite() || observation.head<3>().norm() < 1e-6) {
+    throw std::invalid_argument("[Target] Invalid observation.");
   }
+  auto best_id = -1;
+  auto best_score = std::numeric_limits<double>::infinity();
+  for (int id = 0; id < armor_num_; ++id) {
+    auto score = innovation_distance(observation, id);
+    if (score < best_score) {
+      best_score = score;
+      best_id = id;
+    }
+  }
+  // 保留旧void接口无NIS门限的语义，避免给Task3旧调用增加隐式拒绝行为。
+  if (best_id >= 0) apply_update(observation, best_id, std::numeric_limits<double>::infinity());
+}
+
+bool Target::try_update(const Eigen::Vector4d & observation, int id)
+{
+  return apply_update(observation, id, config_.max_nis);
+}
+
+bool Target::apply_update(const Eigen::Vector4d & observation, int id, double max_nis)
+{
+  if (
+    !observation.allFinite() || observation.head<3>().norm() < 0.1 || id < 0 || id >= armor_num_ ||
+    diverged())
+    return false;
+  if (!update_ypda(observation, id, max_nis)) return false;
+  is_switch_ = id != last_id;
+  if (is_switch_) {
+    ++switch_count_;
+    rlh_initialized_ = true;
+  }
+  if (id != 0) jumped = true;
+  last_id = id;
+  ++update_count_;
+  update_convergency();
+  return true;
+}
+
+double Target::innovation_distance(const Eigen::Vector4d & xyza, int id) const
+{
+  if (!xyza.allFinite() || xyza.head<3>().norm() < 0.1 || id < 0 || id >= armor_num_ || diverged())
+    return std::numeric_limits<double>::infinity();
+  const Eigen::Vector3d ypd = tools::xyz2ypd(xyza.head<3>());
+  Eigen::Vector4d residual =
+    Eigen::Vector4d(ypd[0], ypd[1], ypd[2], xyza[3]) - observation_model(ekf_.x, id);
+  for (int row : {0, 1, 3}) residual[row] = std::remainder(residual[row], 2 * CV_PI);
+  auto H = observation_jacobian(ekf_.x, id);
+  Eigen::Matrix4d S = H * ekf_.P * H.transpose() + measurement_covariance(xyza);
+  auto decomposition = S.ldlt();
+  if (decomposition.info() != Eigen::Success || !decomposition.isPositive())
+    return std::numeric_limits<double>::infinity();
+  auto score = residual.dot(decomposition.solve(residual));
+  return std::isfinite(score) && score >= 0 ? score : std::numeric_limits<double>::infinity();
+}
+
+Eigen::Matrix4d Target::measurement_covariance(const Eigen::Vector4d & xyza)
+{
+  if (!xyza.allFinite() || xyza.head<3>().norm() < 0.1)
+    throw std::invalid_argument("[Target] Invalid noise-model input.");
   // 随距自适应量测噪声
-  const double center_yaw = std::atan2(armor.xyz_in_world[1], armor.xyz_in_world[0]);
-  const double delta_angle = tools::limit_rad(armor.ypr_in_world[0] - center_yaw);
-  const double distance = armor.ypd_in_world[2];
+  const Eigen::Vector3d observed_ypd = tools::xyz2ypd(xyza.head<3>());
+  const double center_yaw = std::atan2(xyza[1], xyza[0]);
+  const double delta_angle = std::remainder(xyza[3] - center_yaw, 2 * CV_PI);
+  const double distance = observed_ypd[2];
   const double distance_sq = distance * distance;
 
   const double r_cam_yaw = 5e-4;
@@ -196,30 +259,31 @@ void Target::update_ypda(const Armor & armor, int id)
   const double r_distance = (1e-2 + 5e-3 * distance_sq) * (std::log(std::abs(delta_angle) + 1) + 1);
   const double r_armor_yaw = 5e-2 + 1e-2 * distance_sq + 2e-1 / distance;
 
-  Eigen::MatrixXd R = Eigen::Vector4d(r_cam_yaw, r_cam_pitch, r_distance, r_armor_yaw).asDiagonal();
+  return Eigen::Vector4d(r_cam_yaw, r_cam_pitch, r_distance, r_armor_yaw).asDiagonal();
+}
+
+bool Target::update_ypda(const Eigen::Vector4d & xyza, int id, double max_nis)
+{
+  // H始终是实际h的导数；不再清零转角列或几何列。
+  auto H = observation_jacobian(ekf_.x, id);
+  auto R = measurement_covariance(xyza);
+  const Eigen::Vector3d observed_ypd = tools::xyz2ypd(xyza.head<3>());
 
   // 定义非线性转换函数h: x -> z
-  auto h = [&](const Eigen::VectorXd & x) -> Eigen::Vector4d {
-    Eigen::VectorXd xyz = h_armor_xyz(x, id);
-    Eigen::VectorXd ypd = tools::xyz2ypd(xyz);
-    auto angle = tools::limit_rad(x[6] + id * 2 * CV_PI / armor_num_);
-    return {ypd[0], ypd[1], ypd[2], angle};
-  };
+  auto h = [&](const Eigen::VectorXd & x) -> Eigen::Vector4d { return observation_model(x, id); };
 
   // 防止夹角求差出现异常值
   auto z_subtract = [](const Eigen::VectorXd & a, const Eigen::VectorXd & b) -> Eigen::VectorXd {
     Eigen::VectorXd c = a - b;
-    c[0] = tools::limit_rad(c[0]);
-    c[1] = tools::limit_rad(c[1]);
-    c[3] = tools::limit_rad(c[3]);
+    c[0] = std::remainder(c[0], 2 * CV_PI);
+    c[1] = std::remainder(c[1], 2 * CV_PI);
+    c[3] = std::remainder(c[3], 2 * CV_PI);
     return c;
   };
 
-  const Eigen::VectorXd & ypd = armor.ypd_in_world;
-  const Eigen::VectorXd & ypr = armor.ypr_in_world;
-  Eigen::VectorXd z{{ypd[0], ypd[1], ypd[2], ypr[0]}};  //获得观测量
+  Eigen::Vector4d z{observed_ypd[0], observed_ypd[1], observed_ypd[2], xyza[3]};
 
-  ekf_.update(z, H, R, h, z_subtract);
+  return ekf_.try_update(z, H, R, h, z_subtract, max_nis);
 }
 
 Eigen::VectorXd Target::ekf_x() const { return ekf_.x; }
@@ -228,6 +292,7 @@ const tools::ExtendedKalmanFilter & Target::ekf() const { return ekf_; }
 
 std::vector<Eigen::Vector4d> Target::armor_xyza_list() const
 {
+  if (!isinit || ekf_.x.size() != 11) return {};
   std::vector<Eigen::Vector4d> _armor_xyza_list;
 
   for (int i = 0; i < armor_num_; i++) {
@@ -240,9 +305,23 @@ std::vector<Eigen::Vector4d> Target::armor_xyza_list() const
 
 bool Target::diverged() const
 {
+  if (ekf_.x.size() != 11 || ekf_.P.rows() != 11 || ekf_.P.cols() != 11) return true;
+  if (!ekf_.x.allFinite() || !ekf_.P.allFinite() || ekf_.P.diagonal().minCoeff() < -1e-8)
+    return true;
+  if (
+    Eigen::Vector3d(ekf_.x[0], ekf_.x[2], ekf_.x[4]).norm() > 100 ||
+    Eigen::Vector3d(ekf_.x[1], ekf_.x[3], ekf_.x[5]).norm() > 20)
+    return true;
+  if (std::abs(ekf_.x[7]) > 30 || std::abs(ekf_.x[10]) > 0.5) return true;
   auto r_ok = ekf_.x[8] > 0.05 && ekf_.x[8] < 0.5;
 
-  //Task_3 TODO: 为前哨站建立专有的发散判定条件
+  if (is_layered_outpost()) {
+    // l/h是相对id=0的高度差，可正可负，不再用r+l判定半径。
+    return !(
+      ekf_.x[8] > 0.22 && ekf_.x[8] < 0.33 && std::abs(ekf_.x[9]) < 0.25 &&
+      std::abs(ekf_.x[10]) < 0.25 && std::abs(ekf_.x[9] - ekf_.x[10]) < 0.25 &&
+      std::abs(ekf_.x[7]) < 6);
+  }
 
   auto l_ok = ekf_.x[8] + ekf_.x[9] > 0.05 && ekf_.x[8] + ekf_.x[9] < 0.5;
 
@@ -276,17 +355,28 @@ Eigen::Vector3d Target::h_armor_xyz(const Eigen::VectorXd & x, int id) const
   auto armor_y = x[2] - r * std::sin(angle);
   auto armor_z = (use_l_h) ? x[4] + x[10] : x[4];
 
-  // Task_3 TODO: 为前哨站建立专有的高度差计算方法
-  /*
-  double dh = 0.0;  // 高度差
-  auto armor_z = x[4] + dh;  // task_3 tips
-  */
+  if (use_outpost_h) {
+    auto dh = id == 1 ? x[9] : (id == 2 ? x[10] : 0.0);
+    armor_z = x[4] + dh;
+  }
 
   return {armor_x, armor_y, armor_z};
 }
 
-Eigen::MatrixXd Target::h_jacobian(const Eigen::VectorXd & x, int id) const
+Eigen::Vector4d Target::observation_model(const Eigen::VectorXd & x, int id) const
 {
+  if (x.size() != 11 || !x.allFinite() || id < 0 || id >= armor_num_)
+    throw std::invalid_argument("[Target] Invalid model input.");
+  const Eigen::Vector3d xyz = h_armor_xyz(x, id);
+  const Eigen::Vector3d ypd = tools::xyz2ypd(xyz);
+  auto angle = tools::limit_rad(x[6] + id * 2 * CV_PI / armor_num_);
+  return {ypd[0], ypd[1], ypd[2], angle};
+}
+
+Eigen::MatrixXd Target::observation_jacobian(const Eigen::VectorXd & x, int id) const
+{
+  if (x.size() != 11 || !x.allFinite() || id < 0 || id >= armor_num_)
+    throw std::invalid_argument("[Target] Invalid model input.");
   auto angle = tools::limit_rad(x[6] + id * 2 * CV_PI / armor_num_);
   auto use_l_h = (armor_num_ == 4) && (id == 1 || id == 3);
   auto use_outpost_h = is_layered_outpost();
@@ -302,14 +392,14 @@ Eigen::MatrixXd Target::h_jacobian(const Eigen::VectorXd & x, int id) const
 
   auto dz_dh = use_l_h ? 1.0 : 0.0;
 
-  //  Task_3 tips:
-  // auto dz_dl = 0.0; // Task_3 TODO: 为前哨站建立专有的雅各比阵计算方法
+  auto dz_dl = (use_outpost_h && id == 1) ? 1.0 : 0.0;
+  if (use_outpost_h) dz_dh = id == 2 ? 1.0 : 0.0;
 
   // clang-format off
   Eigen::MatrixXd H_armor_xyza{
     {1, 0, 0, 0, 0, 0, dx_da, 0, dx_dr, dx_dl,     0},
     {0, 0, 1, 0, 0, 0, dy_da, 0, dy_dr, dy_dl,     0},
-    {0, 0, 0, 0, 1, 0,     0, 0,     0,     0, dz_dh},
+    {0, 0, 0, 0, 1, 0,     0, 0,     0, dz_dl, dz_dh},
     {0, 0, 0, 0, 0, 0,     1, 0,     0,     0,     0}
   };
   // clang-format on

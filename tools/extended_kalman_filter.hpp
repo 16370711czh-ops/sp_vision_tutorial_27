@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <deque>
 #include <functional>
+#include <limits>
 #include <map>
 
 namespace tools
@@ -32,6 +33,13 @@ public:
     std::function<Eigen::VectorXd(const Eigen::VectorXd &, const Eigen::VectorXd &)> z_subtract =
       [](const Eigen::VectorXd & a, const Eigen::VectorXd & b) { return a - b; });
 
+  // 异常/门限拒绝时返回false，x/P保持不变；不将坏测量写进实时滤波器。
+  bool try_update(
+    const Eigen::VectorXd & z, const Eigen::MatrixXd & H, const Eigen::MatrixXd & R,
+    std::function<Eigen::VectorXd(const Eigen::VectorXd &)> h,
+    std::function<Eigen::VectorXd(const Eigen::VectorXd &, const Eigen::VectorXd &)> z_subtract,
+    double max_nis = std::numeric_limits<double>::infinity());
+
   Eigen::VectorXd update(
     const Eigen::VectorXd & z, const Eigen::MatrixXd & H, const Eigen::MatrixXd & R,
     std::function<Eigen::VectorXd(const Eigen::VectorXd &)> h,
@@ -39,9 +47,9 @@ public:
       [](const Eigen::VectorXd & a, const Eigen::VectorXd & b) { return a - b; });
 
   std::map<std::string, double> data;  //卡方检验数据
-  std::deque<int> recent_nis_failures{0};
+  std::deque<int> recent_nis_failures{};
   size_t window_size = 100;
-  double last_nis;
+  double last_nis = 0;
 
 private:
   Eigen::MatrixXd I;

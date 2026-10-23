@@ -42,10 +42,10 @@ private:
   std::thread daemon_thread_;
   std::atomic<bool> daemon_quit_;
 
-  void * handle_;
+  void * handle_ = nullptr;
   std::thread capture_thread_;
-  std::atomic<bool> capturing_;
-  std::atomic<bool> capture_quit_;
+  std::atomic<bool> capturing_{false};
+  std::atomic<bool> capture_quit_{false};
   tools::ThreadSafeQueue<CameraData> queue_;
 
   int vid_, pid_;
