@@ -22,7 +22,7 @@ const std::string keys =
   "{@config-path | | YAML配置路径}"
   "{show | false | 显示识别画面}"
   "{dry-run | false | 只估计与记录，不接管云台}"
-  "{fire | false | 允许单发请求；默认禁止发射}";
+  "{fire | true | 默认允许单发请求；--fire=false 禁止发射}";
 
 int run(const std::string & config_path, bool show, bool dry_run, bool enable_fire)
 {

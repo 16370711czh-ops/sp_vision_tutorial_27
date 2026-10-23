@@ -62,8 +62,9 @@ Task3Result Task3Pipeline::step(const Task3Frame & frame)
   result.control = !dry_run_ && result.aim.valid && tracker_.updates() >= 3;
   // Continuous permission: the controller provides the specified 12Hz cadence.
   // No Task2 SingleShot limiter, no packet-count to shot-count assumption.
+  // Calibration verification flags are advisory; runtime readiness still gates fire.
   result.fire = outpost_fire_ready(
-    enable_fire_ && settings_.middle_height_verified && settings_.model_geometry_verified,
+    enable_fire_,
     result.control, result.estimate_ready,
     result.aim, frame.yaw, frame.pitch, settings_.firing);
   return result;

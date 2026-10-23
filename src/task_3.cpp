@@ -22,7 +22,7 @@ const std::string keys =
   "{@config-path | | YAML配置路径}"
   "{show | false | 显示识别画面}"
   "{dry-run | false | 只估计与记录，不接管云台}"
-  "{fire | false | 允许连发电平；默认禁止发射}";
+  "{fire | true | 默认允许连发电平；--fire=false 禁止发射}";
 
 int run(const std::string & config_path, bool show, bool dry_run, bool enable_fire)
 {
@@ -37,9 +37,9 @@ int run(const std::string & config_path, bool show, bool dry_run, bool enable_fi
     throw std::invalid_argument("Task3 requires command_timeout_ms within [20,200]");
   auto_aim::Task3Pipeline pipeline(settings, enable_fire, dry_run);
   if (!settings.middle_height_verified)
-    tools::logger()->warn("[Task3] Middle height bounds are unverified: fire is blocked.");
+    tools::logger()->warn("[Task3] Middle height bounds are unverified; this advisory does not block fire.");
   if (!settings.model_geometry_verified)
-    tools::logger()->warn("[Task3] Model geometry is unverified: fire is blocked.");
+    tools::logger()->warn("[Task3] Model geometry is unverified; this advisory does not block fire.");
   tools::Exiter exiter;
   tools::Plotter plotter;
   auto_aim::Solver solver(config_path);

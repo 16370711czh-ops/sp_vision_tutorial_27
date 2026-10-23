@@ -77,10 +77,10 @@ void pipeline_test(
   }
   expect(observed > 500 && ready > 300, "pipeline acquires all three simulated-height plates");
   expect((controls > 300) == !dry_run, "dry-run suppresses all control while retaining estimation");
-  if (enable && !dry_run && verified && geometry_verified)
+  if (enable && !dry_run)
     expect(fires > 100 && consecutive_fires > 50, "continuous fire permission has no 5Hz pulse limiter");
   else
-    expect(fires == 0, "disabled fire, dry-run, unverified heights/geometry block every fire request");
+    expect(fires == 0, "explicit fire disable and dry-run block every fire request");
 
   // Each invalid input must produce an immediate stop, not a stale last command.
   auto check_stop = [&](const auto_aim::Task3Frame & invalid) {
@@ -159,8 +159,6 @@ int main(int argc, char ** argv)
 {
   if (argc != 2) return 2;
   const auto settings = auto_aim::load_task3_settings(argv[1]);
-  expect(!settings.middle_height_verified, "distributed YAML blocks fire until height calibration");
-  expect(!settings.model_geometry_verified, "distributed YAML keeps physical geometry unverified");
   expect(std::abs(settings.aiming.pitch_limit - CV_PI / 9) < 1e-12, "YAML degrees converted to rad");
   expect(settings.tracking.filter.max_nis == 25, "Task3 NIS parameter actually loaded");
   pipeline_test(settings, false, false, true);
@@ -168,6 +166,7 @@ int main(int argc, char ** argv)
   pipeline_test(settings, true, false, false);
   pipeline_test(settings, true, false, true);
   pipeline_test(settings, true, false, true, false);
+  pipeline_test(settings, true, false, false, false);
   rejection_test();
   auto invalid = settings;
   invalid.tracking.filter.max_nis = std::numeric_limits<double>::quiet_NaN();
@@ -176,8 +175,21 @@ int main(int argc, char ** argv)
   catch (const std::invalid_argument &) { rejected = true; }
   expect(rejected, "invalid NIS config rejected before hardware construction");
   auto yaml = YAML::LoadFile(argv[1]);
-  yaml["task3"]["pose_timeout_ms"] = "wrong-type";
   const char * path = "task3_invalid_config.yaml";
+  // Both measured and unmeasured configurations are valid; status is advisory.
+  for (bool height_verified : {false, true}) {
+    for (bool geometry_verified : {false, true}) {
+      yaml["task3"]["middle_height_verified"] = height_verified;
+      yaml["task3"]["model_geometry_verified"] = geometry_verified;
+      { std::ofstream stream(path); stream << yaml; }
+      const auto loaded = auto_aim::load_task3_settings(path);
+      expect(loaded.middle_height_verified == height_verified &&
+               loaded.model_geometry_verified == geometry_verified,
+             "both calibration status fields load without imposing a fire lock");
+    }
+  }
+  std::remove(path);
+  yaml["task3"]["pose_timeout_ms"] = "wrong-type";
   { std::ofstream stream(path); stream << yaml; }
   rejected = false;
   try { auto_aim::load_task3_settings(path); }

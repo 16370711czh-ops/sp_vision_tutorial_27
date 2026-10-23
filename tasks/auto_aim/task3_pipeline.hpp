@@ -15,8 +15,9 @@ struct Task3Settings
   double camera_latency = 0;  // s; pose query = received image timestamp - this offset
   double max_reprojection_error_px = 5;
   int pose_timeout_ms = 20;
+  // Manual calibration status for logging only; these flags do not gate fire.
   bool middle_height_verified = false;
-  bool model_geometry_verified = false;  // Manual CAD/measurement check, not EKF readiness.
+  bool model_geometry_verified = false;
   bool follow_without_ballistics = true;
 };
 
