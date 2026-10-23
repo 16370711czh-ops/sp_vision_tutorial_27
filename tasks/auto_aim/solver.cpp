@@ -39,9 +39,11 @@ const std::vector<cv::Point3f> SPECIAL_ARMOR_POINTS{
 Solver::Solver(const std::string & config_path) : R_gimbal2world_(Eigen::Matrix3d::Identity())
 {
   auto yaml = tools::load(config_path);
+  // Keep the Task2 override; Task3 uses its own validated reprojection threshold.
+  const auto node = yaml["task3"] ? yaml["task3"] : yaml["task2"];
   max_reprojection_error_px_ = tools::read_or<double>(
-    yaml["task2"], "max_reprojection_error_px",
-    (yaml["task2"] ? 5.0 : std::numeric_limits<double>::infinity()));
+    node, "max_reprojection_error_px",
+    (node ? 5.0 : std::numeric_limits<double>::infinity()));
   if (std::isnan(max_reprojection_error_px_) || max_reprojection_error_px_ <= 0)
     throw std::invalid_argument("[Solver] Invalid reprojection threshold.");
   auto finite_size = [](const std::vector<double> & values, size_t expected) {

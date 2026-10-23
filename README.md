@@ -25,5 +25,7 @@ Lecture5:
 - [Task1：正式要求复核与验收边界](TASK1_REVIEW.md)
 - [Task1：实际测试报告](TASK1_TEST_REPORT.md)
 - [Task2：文件清单与说明入口](TASK2_GUIDE.md)
+- [Task3：前哨站模型、文件清单与运行说明](TASK3_GUIDE.md)
+- [Task3：本机 Ubuntu 构建与离线验证报告](TASK3_VALIDATION.md)
 
 Task1 始终不开火，支持先干跑、再无发射跟随。正式实机考核须由人工完成；离线测试不能代替机械运动验收。

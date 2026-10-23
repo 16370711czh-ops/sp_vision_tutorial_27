@@ -1,0 +1,87 @@
+# enemy_color: "red"
+enemy_color: "blue"
+rotation_angle: 180
+
+#####-----神经网络参数-----#####
+yolo_name: yolov5
+yolov5_model_path: assets/yolov5.xml
+device: CPU
+min_confidence: 0.8
+use_traditional: false
+use_roi: false
+roi:
+  x: 460
+  y: 200
+  width: 600
+  height: 600
+
+threshold: 100
+
+yaw_offset: 2 # degree -2.5
+pitch_offset: 6.5 # degree 2
+
+camera_name: "hikrobot"
+exposure_ms: 5.0
+gain: 16.9
+vid_pid: "2bdf:0001"
+
+#  1  0  0
+#  0  1  0
+#  0  0  1
+R_gimbal2imubody: [1, 0, 0, 0, 1, 0, 0, 0, 1]
+
+# 重投影误差: 0.1083px
+camera_matrix: [2392.5209987505368, 0, 748.01150314539757, 0, 2400.0935468424304, 492.85220755571686, 0, 0, 1]
+distort_coeffs: [-0.033965682188523728, 0.22067232776537457, -0.0031883914151515291, 0.0011871466323144101, 0]
+
+
+# 相机同理想情况的偏角: yaw0.28 pitch-8.85 roll-2.49 degree
+# 标定板到世界坐标系原点的水平距离: 1.53 m
+# 标定板同竖直摆放时的偏角: yaw100.80 pitch2.17 roll-2.06 degree
+R_camera2gimbal: [0.0017953813929354055, -0.15386777101456939, 0.98808981658990014, -0.9990735744256628, -0.042761346848673949, -0.0048435627400816488, 0.04299731956742895, -0.98716572887164966, -0.15380199690290414]
+t_camera2gimbal: [0.11245198218973133, 0.016955489261152895, 0.080193991211778851]
+
+#####-----gimbal参数-----#####
+com_port: "/dev/gimbal"
+command_timeout_ms: 100
+
+# Task 3: these are starting values; camera calibration and height bounds must match the robot.
+task3:
+  # Must be set true only after measuring the height window on the actual sentry.
+  middle_height_verified: false
+  feedback_timeout: 0.1
+  camera_to_pose_offset_ms: 0.0
+  pose_timeout_ms: 20
+  max_reprojection_error_px: 5.0
+  max_nis: 25.0
+  max_prediction_dt: 2.0
+  association_angle: 60.0
+  follow_without_ballistics: true
+  radius: 0.2765
+  # REQUIRED SETUP: world z is relative to the gimbal-axis intersection, not the floor.
+  # 0.10..0.50m is an EXAMPLE, not a measured value for your sentry.
+  # After hardware approval, use --dry-run=true --show=true to measure all three middle plates and exclude top armor.
+  middle_z_min: 0.10
+  middle_z_max: 0.50
+  radius_variance: 0.000001
+  height1_variance: 0.01
+  height2_variance: 0.01
+  center_noise: 0.00001
+  angular_acceleration_variance: 0.2
+  lost_time: 0.4
+  association_distance: 0.35
+  warmup_time: 2.0
+  min_updates: 50
+  max_omega_variance: 0.04
+  min_spin_speed: 1.8
+  max_spin_speed: 3.2
+  fire_delay: 0.03
+  max_frame_age: 0.2
+  pitch_limit: 20.0
+  max_facing_angle: 65.0
+  fire_facing_angle: 30.0
+  yaw_tolerance: 0.5
+  pitch_tolerance: 0.5
+  min_bullet_speed: 14.0
+  max_bullet_speed: 35.0
+# Controller must use 12Hz continuous mode. Vision fire is permission, not one packet = one shot.
