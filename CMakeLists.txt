@@ -52,6 +52,29 @@ if(BUILD_VISION_APP)
     set(OpenVINO_DIR "/opt/intel/openvino_2024.6.0/runtime/cmake")
   endif()
   find_package(OpenVINO REQUIRED COMPONENTS Runtime)
+  # The Linux PyPI wheel exports ABI=0; Ubuntu's OpenCV/yaml-cpp use ABI=1.
+  # Compile AND link a real dependency probe rather than overriding the vendor ABI.
+  include(CheckCXXSourceCompiles)
+  include(CMakePushCheckState)
+  cmake_push_check_state(RESET)
+  set(CMAKE_REQUIRED_INCLUDES ${OpenCV_INCLUDE_DIRS})
+  set(CMAKE_REQUIRED_LIBRARIES openvino::runtime ${TASK2_YAML_TARGET} ${OpenCV_LIBS})
+  unset(VISION_DEPENDENCY_ABI_COMPATIBLE CACHE)
+  check_cxx_source_compiles("
+    #include <string>
+    #include <yaml-cpp/yaml.h>
+    #include <opencv2/core.hpp>
+    #include <openvino/openvino.hpp>
+    int main() {
+      auto node = YAML::LoadFile(std::string(\"compile_link_probe_only\"));
+      cv::CommandLineParser cli(0, nullptr, std::string());
+      ov::Core core;
+      return static_cast<int>(node.size() + core.get_available_devices().size());
+    }" VISION_DEPENDENCY_ABI_COMPATIBLE)
+  cmake_pop_check_state()
+  if(NOT VISION_DEPENDENCY_ABI_COMPATIBLE)
+    message(FATAL_ERROR "OpenVINO/OpenCV/yaml-cpp cannot link with one C++ ABI. Use the official Ubuntu C++ OpenVINO archive matching system libraries; the PyPI manylinux wheel uses ABI=0. See CMakeFiles/CMakeError.log. Do not force a conflicting _GLIBCXX_USE_CXX11_ABI value.")
+  endif()
   add_subdirectory(tools)
   add_subdirectory(io)
   add_subdirectory(tasks/auto_aim)
@@ -59,4 +82,11 @@ if(BUILD_VISION_APP)
     add_executable(${task} src/${task}.cpp)
     target_link_libraries(${task} PRIVATE auto_aim tools io task2_dependencies ${OpenCV_LIBS})
   endforeach()
+  if(BUILD_TESTING)
+    add_executable(task3_detector_contract tests/task3_detector_contract.cpp)
+    target_link_libraries(task3_detector_contract PRIVATE auto_aim tools io task2_dependencies ${OpenCV_LIBS})
+    add_test(NAME task3_detector_contract
+      COMMAND task3_detector_contract "${PROJECT_SOURCE_DIR}/configs/task3.yaml")
+    set_tests_properties(task3_detector_contract PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+  endif()
 endif()

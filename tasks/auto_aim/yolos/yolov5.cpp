@@ -201,6 +201,7 @@ bool YOLOV5::check_name(const Armor & armor) const
 
 bool YOLOV5::check_type(const Armor & armor) const
 {
+  if (armor.type == ArmorType::special) return armor.name == ArmorName::outpost;
   auto name_ok = (armor.type == ArmorType::small)
                    ? (armor.name != ArmorName::one && armor.name != ArmorName::base)
                    : (armor.name != ArmorName::two && armor.name != ArmorName::sentry &&

@@ -176,7 +176,8 @@ Armor::Armor(
   name = num_id == 0  ? ArmorName::sentry
          : num_id > 5 ? ArmorName(num_id)
                       : ArmorName(num_id - 1);  //TODO 考虑Bb
-  type = num_id == 1 ? ArmorType::big : ArmorType::small;
+  type = name == ArmorName::outpost ? ArmorType::special
+                                  : num_id == 1 ? ArmorType::big : ArmorType::small;
 }
 
 // YOLOV5+ROI构造函数
@@ -215,7 +216,8 @@ Armor::Armor(
   ratio = max_length / max_width;
   color = color_id == 0 ? Color::blue : color_id == 1 ? Color::red : Color::extinguish;
   name = num_id == 0 ? ArmorName::sentry : num_id > 5 ? ArmorName(num_id) : ArmorName(num_id - 1);
-  type = num_id == 1 ? ArmorType::big : ArmorType::small;
+  type = name == ArmorName::outpost ? ArmorType::special
+                                  : num_id == 1 ? ArmorType::big : ArmorType::small;
 }
 
 }  // namespace auto_aim

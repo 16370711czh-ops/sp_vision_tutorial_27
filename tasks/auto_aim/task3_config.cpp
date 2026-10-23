@@ -47,6 +47,7 @@ Task3Settings load_task3_settings(const std::string & path)
   s.firing.pitch_tolerance = tools::read_or<double>(node, "pitch_tolerance", 0.5) * CV_PI / 180;
   s.firing.facing_angle = tools::read_or<double>(node, "fire_facing_angle", 30.0) * CV_PI / 180;
   s.middle_height_verified = tools::read_or<bool>(node, "middle_height_verified", false);
+  s.model_geometry_verified = tools::read_or<bool>(node, "model_geometry_verified", false);
   s.follow_without_ballistics = tools::read_or<bool>(node, "follow_without_ballistics", true);
   s.feedback_timeout = tools::read_or<double>(node, "feedback_timeout", s.feedback_timeout);
   s.camera_latency = tools::read_or<double>(node, "camera_to_pose_offset_ms", 0.0) / 1000;

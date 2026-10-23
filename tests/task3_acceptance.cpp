@@ -27,8 +27,8 @@ auto stamp(double seconds)
 std::vector<Eigen::Vector4d> plates(double phase)
 {
   std::vector<Eigen::Vector4d> observations;
-  // Drawing-derived test fixture only: gimbal axis 0.95m above the same ground datum.
-  // Order deliberately differs from height sorting. The real gimbal height is unmeasured.
+  // Hypothetical test fixture, NOT confirmed drawing center heights. Assume a 0.95m
+  // gimbal datum for this calculation only. The real center/datum heights are unmeasured.
   const double ground_heights[3] = {1.216, 1.316, 1.116};
   for (int id = 0; id < 3; ++id) {
     const double angle = std::remainder(phase + id * 2 * CV_PI / 3, 2 * CV_PI);
@@ -40,10 +40,12 @@ std::vector<Eigen::Vector4d> plates(double phase)
   return observations;
 }
 
-void pipeline_test(auto_aim::Task3Settings settings, bool enable, bool dry_run, bool verified)
+void pipeline_test(
+  auto_aim::Task3Settings settings, bool enable, bool dry_run, bool verified, bool geometry_verified = true)
 {
   settings.aiming.yaw_offset = settings.aiming.pitch_offset = 0;
   settings.middle_height_verified = verified;
+  settings.model_geometry_verified = geometry_verified;
   auto_aim::Task3Pipeline pipeline(settings, enable, dry_run);
   auto_aim::Task3Frame frame;
   frame.image_valid = frame.pose_valid = frame.auto_mode = frame.feedback_fresh = true;
@@ -71,14 +73,14 @@ void pipeline_test(auto_aim::Task3Settings settings, bool enable, bool dry_run, 
              "fire requires valid ballistic aim, observation, control and ready model");
     if (i > 230 && pipeline.tracker().target())
       expect(std::abs(pipeline.tracker().target()->ekf_x()[7] + 2.5) < 0.4,
-             "independent 1116/1216/1316mm fixture omega accuracy");
+             "hypothetical height fixture omega accuracy");
   }
-  expect(observed > 500 && ready > 300, "pipeline acquires all three drawing-height plates");
+  expect(observed > 500 && ready > 300, "pipeline acquires all three simulated-height plates");
   expect((controls > 300) == !dry_run, "dry-run suppresses all control while retaining estimation");
-  if (enable && !dry_run && verified)
+  if (enable && !dry_run && verified && geometry_verified)
     expect(fires > 100 && consecutive_fires > 50, "continuous fire permission has no 5Hz pulse limiter");
   else
-    expect(fires == 0, "disabled fire, dry-run or unverified heights block every fire request");
+    expect(fires == 0, "disabled fire, dry-run, unverified heights/geometry block every fire request");
 
   // Each invalid input must produce an immediate stop, not a stale last command.
   auto check_stop = [&](const auto_aim::Task3Frame & invalid) {
@@ -158,12 +160,14 @@ int main(int argc, char ** argv)
   if (argc != 2) return 2;
   const auto settings = auto_aim::load_task3_settings(argv[1]);
   expect(!settings.middle_height_verified, "distributed YAML blocks fire until height calibration");
+  expect(!settings.model_geometry_verified, "distributed YAML keeps physical geometry unverified");
   expect(std::abs(settings.aiming.pitch_limit - CV_PI / 9) < 1e-12, "YAML degrees converted to rad");
   expect(settings.tracking.filter.max_nis == 25, "Task3 NIS parameter actually loaded");
   pipeline_test(settings, false, false, true);
   pipeline_test(settings, true, true, true);
   pipeline_test(settings, true, false, false);
   pipeline_test(settings, true, false, true);
+  pipeline_test(settings, true, false, true, false);
   rejection_test();
   auto invalid = settings;
   invalid.tracking.filter.max_nis = std::numeric_limits<double>::quiet_NaN();

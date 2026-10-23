@@ -1,5 +1,0 @@
-[1/5] Building CXX object tests/CMakeFiles/task2_estimation.dir/__/tools/extended_kalman_filter.cpp.obj
-[2/5] Linking CXX static library tests\libtask2_estimation.a
-[3/5] Linking CXX executable tests\task2_regression.exe
-[4/5] Linking CXX executable tests\task2_acceptance.exe
-[5/5] Linking CXX executable tests\task2_solver_roundtrip.exe

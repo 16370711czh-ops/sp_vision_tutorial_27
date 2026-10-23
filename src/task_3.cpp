@@ -38,6 +38,8 @@ int run(const std::string & config_path, bool show, bool dry_run, bool enable_fi
   auto_aim::Task3Pipeline pipeline(settings, enable_fire, dry_run);
   if (!settings.middle_height_verified)
     tools::logger()->warn("[Task3] Middle height bounds are unverified: fire is blocked.");
+  if (!settings.model_geometry_verified)
+    tools::logger()->warn("[Task3] Model geometry is unverified: fire is blocked.");
   tools::Exiter exiter;
   tools::Plotter plotter;
   auto_aim::Solver solver(config_path);
@@ -153,6 +155,7 @@ int run(const std::string & config_path, bool show, bool dry_run, bool enable_fi
       {"dh1", dh1},
       {"dh2", dh2},
       {"middle_height_verified", settings.middle_height_verified ? 1 : 0},
+      {"model_geometry_verified", settings.model_geometry_verified ? 1 : 0},
       {"nis", tracker.last_nis()},
       {"requested_control", result.control ? 1 : 0},
       {"requested_fire", result.fire ? 1 : 0},

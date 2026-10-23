@@ -47,8 +47,11 @@ command_timeout_ms: 100
 
 # Task 3: these are starting values; camera calibration and height bounds must match the robot.
 task3:
+  # LEGACY CANDIDATE PRIOR ONLY: the supplied raster does not prove Phi553 is
+  # the PnP-center trajectory diameter. Measure center radius / confirm CAD first.
   # Must be set true only after measuring the height window on the actual sentry.
   middle_height_verified: false
+  model_geometry_verified: false  # radius, center/normal convention, plate plane and dimensions
   feedback_timeout: 0.1
   camera_to_pose_offset_ms: 0.0
   pose_timeout_ms: 20

@@ -79,7 +79,7 @@ Target::Target(
     {1, 64, 1, 64, 1, 64, 0.4, 100, config_.radius_variance, config_.radius_diff_variance,
      config_.height_diff_variance}};
 
-  // 前哨站三板共用已知半径；从0估计转速，不将2.5rad/s写成观测答案。
+  // 前哨站共用用户提供的半径先验（须实物/CAD核对），从0估计转速。
   Eigen::VectorXd P0_dig_outpost{
     {0.1, 0.01, 0.1, 0.01, 0.1, 0.01, 0.4, 100, config_.outpost_radius_variance,
      config_.radius_diff_variance, config_.height_diff_variance}};

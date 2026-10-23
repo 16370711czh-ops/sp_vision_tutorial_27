@@ -28,16 +28,26 @@ jobs:
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build g++ python3-venv libusb-1.0-0-dev libeigen3-dev libopencv-dev libyaml-cpp-dev libfmt-dev libspdlog-dev nlohmann-json3-dev
-          python3 -m venv "$RUNNER_TEMP/task1-openvino"
-          "$RUNNER_TEMP/task1-openvino/bin/python" -m pip install 'openvino==2024.6.0'
+          sudo apt-get install -y cmake ninja-build g++ curl libusb-1.0-0-dev libeigen3-dev libopencv-dev libyaml-cpp-dev libfmt-dev libspdlog-dev nlohmann-json3-dev
+      - name: Fetch ABI-compatible official Ubuntu C++ OpenVINO archive
+        run: |
+          cd "$RUNNER_TEMP"
+          package=l_openvino_toolkit_ubuntu22_2024.6.0.17404.4c0f47d2335_x86_64.tgz
+          url="https://storage.openvinotoolkit.org/repositories/openvino/packages/2024.6/linux/$package"
+          curl --fail --location --retry 3 --connect-timeout 20 --max-time 300 "$url" --output "$package"
+          curl --fail --location --retry 3 --connect-timeout 20 --max-time 60 "$url.sha256" --output "$package.sha256"
+          sha256sum --check "$package.sha256"
+          tar -xzf "$package"
       - name: Configure and link the real vision applications
         run: |
-          openvino_cmake_path="$("$RUNNER_TEMP/task1-openvino/bin/python" -c 'from openvino.utils import get_cmake_path; print(get_cmake_path())')"
-          cmake -S . -B build-vision -G Ninja -DBUILD_VISION_APP=ON -DBUILD_TESTING=OFF -DOpenVINO_DIR="$openvino_cmake_path"
-          cmake --build build-vision --target task_1 task_2 task_3 -j2
+          openvino_root="$RUNNER_TEMP/l_openvino_toolkit_ubuntu22_2024.6.0.17404.4c0f47d2335_x86_64"
+          source "$openvino_root/setupvars.sh"
+          cmake -S . -B build-vision -G Ninja -DBUILD_VISION_APP=ON -DBUILD_TESTING=ON -DOpenVINO_DIR="$openvino_root/runtime/cmake"
+          cmake --build build-vision --target task_1 task_2 task_3 task3_detector_contract -j2
       - name: Check executable loading and help without touching hardware
         run: |
           ./build-vision/task_1 --help
           ./build-vision/task_2 --help
           ./build-vision/task_3 --help
+      - name: Positive YOLO postprocess and PnP contract without Camera or Gimbal
+        run: ctest --test-dir build-vision -R '^task3_detector_contract$' --output-on-failure
