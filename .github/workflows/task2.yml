@@ -1,4 +1,4 @@
-name: Task2 offline acceptance
+name: Task1 and Task2 acceptance
 on:
   push:
     branches: [final]
@@ -20,3 +20,21 @@ jobs:
           cmake --build build-offline -j2
       - name: Run offline acceptance without camera, serial or firing
         run: ctest --test-dir build-offline --output-on-failure
+  task1-linux-build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build g++ python3-venv libusb-1.0-0-dev libeigen3-dev libopencv-dev libyaml-cpp-dev libfmt-dev libspdlog-dev nlohmann-json3-dev
+          python3 -m venv "$RUNNER_TEMP/task1-openvino"
+          "$RUNNER_TEMP/task1-openvino/bin/python" -m pip install 'openvino==2024.6.0'
+      - name: Configure and link the real Task1 vision application
+        run: |
+          openvino_cmake_path="$("$RUNNER_TEMP/task1-openvino/bin/python" -c 'from openvino.utils import get_cmake_path; print(get_cmake_path())')"
+          cmake -S . -B build-vision -G Ninja -DBUILD_VISION_APP=ON -DBUILD_TESTING=OFF -DOpenVINO_DIR="$openvino_cmake_path"
+          cmake --build build-vision --target task_1 -j2
+      - name: Check executable loading and help without touching hardware
+        run: ./build-vision/task_1 --help

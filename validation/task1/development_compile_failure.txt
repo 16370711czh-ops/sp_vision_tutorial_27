@@ -1,0 +1,155 @@
+[1/27] Building CXX object tests/CMakeFiles/task2_estimation.dir/__/tasks/auto_aim/task2_pipeline.cpp.obj
+[2/27] Building CXX object tests/CMakeFiles/task2_estimation.dir/__/tasks/auto_aim/task2_tracker.cpp.obj
+[3/27] Building CXX object tests/CMakeFiles/task2_estimation.dir/__/tasks/auto_aim/task2_aimer.cpp.obj
+[4/27] Building CXX object tests/CMakeFiles/task2_estimation.dir/__/tools/math_tools.cpp.obj
+[5/27] Building CXX object tests/CMakeFiles/task2_estimation.dir/__/tools/trajectory.cpp.obj
+[6/27] Building CXX object tests/CMakeFiles/task2_estimation.dir/__/tasks/auto_aim/task2_config.cpp.obj
+[7/27] Building CXX object tests/CMakeFiles/task2_estimation.dir/__/tools/crc.cpp.obj
+[8/27] Building CXX object tests/CMakeFiles/task2_estimation.dir/__/tools/logger.cpp.obj
+[9/27] Building CXX object tests/CMakeFiles/task2_estimation.dir/__/tasks/auto_aim/target.cpp.obj
+[10/27] Building CXX object tests/CMakeFiles/task2_regression.dir/task_2_test.cpp.obj
+[11/27] Building CXX object tests/CMakeFiles/task2_estimation.dir/__/tools/extended_kalman_filter.cpp.obj
+[12/27] Linking CXX static library tests\libtask2_estimation.a
+[13/27] Linking CXX executable tests\task2_regression.exe
+[14/27] Building CXX object tests/CMakeFiles/task2_solver_roundtrip.dir/__/tasks/auto_aim/armor.cpp.obj
+[15/27] Building CXX object tests/CMakeFiles/task2_solver_roundtrip.dir/task2_solver_roundtrip.cpp.obj
+[16/27] Building CXX object tests/CMakeFiles/task1_compatibility.dir/task_1_angles_test.cpp.obj
+[17/27] Linking CXX executable tests\task1_compatibility.exe
+[18/27] Building CXX object tests/CMakeFiles/task2_acceptance.dir/task2_acceptance.cpp.obj
+[19/27] Linking CXX executable tests\task2_acceptance.exe
+[20/27] Building CXX object tests/CMakeFiles/task1_follow_test.dir/task1_follow_test.cpp.obj
+In file included from C:/Users/hp/Documents/Codex/2026-10-21/w/work/task1_github_project/tests/task1_follow_test.cpp:2:
+In file included from C:/Users/hp/Documents/Codex/2026-10-21/w/work/llvm-mingw-20240619-ucrt-x86_64/include/c++/v1/iostream:43:
+In file included from C:/Users/hp/Documents/Codex/2026-10-21/w/work/llvm-mingw-20240619-ucrt-x86_64/include/c++/v1/ios:223:
+In file included from C:/Users/hp/Documents/Codex/2026-10-21/w/work/llvm-mingw-20240619-ucrt-x86_64/include/c++/v1/__locale:23:
+In file included from C:/Users/hp/Documents/Codex/2026-10-21/w/work/llvm-mingw-20240619-ucrt-x86_64/include/c++/v1/string:625:
+In file included from C:/Users/hp/Documents/Codex/2026-10-21/w/work/llvm-mingw-20240619-ucrt-x86_64/include/c++/v1/string_view:213:
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/llvm-mingw-20240619-ucrt-x86_64/include/c++/v1/__fwd/string_view.h:22:41: warning: 'char_traits<fmt::detail::char8_type>' is deprecated: char_traits<T> for T not equal to char, wchar_t, char8_t, char16_t or char32_t is non-standard and is provided for a temporary period. It will be removed in LLVM 19, so please migrate off of it. [-Wdeprecated-declarations]
+   22 | template <class _CharT, class _Traits = char_traits<_CharT> >
+      |                                         ^
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/qa_headers/fmt/include/fmt/core.h:392:26: note: in instantiation of default argument for 'basic_string_view<fmt::detail::char8_type>' required here
+  392 | template <typename Char> using std_string_view = std::basic_string_view<Char>;
+      |                          ^~~~~
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/qa_headers/fmt/include/fmt/core.h:487:50: note: in instantiation of template type alias 'std_string_view' requested here
+  487 |                                       S, detail::std_string_view<Char>>::value)>
+      |                                                  ^
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/qa_headers/fmt/include/fmt/format.h:597:57: note: in instantiation of template class 'fmt::basic_string_view<fmt::detail::char8_type>' requested here
+  597 | inline auto compute_width(basic_string_view<char8_type> s) -> size_t {
+      |                                                         ^
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/llvm-mingw-20240619-ucrt-x86_64/include/c++/v1/__string/char_traits.h:81:8: note: 'char_traits<fmt::detail::char8_type>' has been explicitly marked deprecated here
+   81 | struct _LIBCPP_DEPRECATED_(
+      |        ^
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/llvm-mingw-20240619-ucrt-x86_64/include/c++/v1/__config:975:53: note: expanded from macro '_LIBCPP_DEPRECATED_'
+  975 | #      define _LIBCPP_DEPRECATED_(m) __attribute__((__deprecated__(m)))
+      |                                                     ^
+
+1 warning generated.
+
+[21/27] Linking CXX executable tests\task1_follow_test.exe
+[22/27] Building CXX object tests/CMakeFiles/task1_solver_follow.dir/task1_solver_follow.cpp.obj
+FAILED: tests/CMakeFiles/task1_solver_follow.dir/task1_solver_follow.cpp.obj
+C:\Users\hp\Documents\Codex\2026-10-21\w\work\llvm-mingw-20240619-ucrt-x86_64\bin\clang++.exe -DFMT_HEADER_ONLY -DSPDLOG_FMT_EXTERNAL -IC:/Users/hp/Documents/Codex/2026-10-21/w/work/task1_github_project -IC:/Users/hp/Documents/Codex/2026-10-21/w/work/qa_headers/eigen -IC:/Users/hp/Documents/Codex/2026-10-21/w/work/qa_headers/fmt/include -IC:/Users/hp/Documents/Codex/2026-10-21/w/work/qa_headers/spdlog/include -IC:/Users/hp/Documents/Codex/2026-10-21/w/work/qa_headers/json/single_include -isystem C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include -isystem C:/Users/hp/Documents/Codex/2026-10-21/w/work/submission_prefix/include -O3 -DNDEBUG -std=c++17 -MD -MT tests/CMakeFiles/task1_solver_follow.dir/task1_solver_follow.cpp.obj -MF tests\CMakeFiles\task1_solver_follow.dir\task1_solver_follow.cpp.obj.d -o tests/CMakeFiles/task1_solver_follow.dir/task1_solver_follow.cpp.obj -c C:/Users/hp/Documents/Codex/2026-10-21/w/work/task1_github_project/tests/task1_solver_follow.cpp
+In file included from C:/Users/hp/Documents/Codex/2026-10-21/w/work/task1_github_project/tests/task1_solver_follow.cpp:1:
+In file included from C:/Users/hp/Documents/Codex/2026-10-21/w/work/submission_prefix/include/yaml-cpp/yaml.h:10:
+In file included from C:/Users/hp/Documents/Codex/2026-10-21/w/work/submission_prefix/include/yaml-cpp/parser.h:10:
+In file included from C:/Users/hp/Documents/Codex/2026-10-21/w/work/llvm-mingw-20240619-ucrt-x86_64/include/c++/v1/ios:223:
+In file included from C:/Users/hp/Documents/Codex/2026-10-21/w/work/llvm-mingw-20240619-ucrt-x86_64/include/c++/v1/__locale:23:
+In file included from C:/Users/hp/Documents/Codex/2026-10-21/w/work/llvm-mingw-20240619-ucrt-x86_64/include/c++/v1/string:625:
+In file included from C:/Users/hp/Documents/Codex/2026-10-21/w/work/llvm-mingw-20240619-ucrt-x86_64/include/c++/v1/string_view:213:
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/llvm-mingw-20240619-ucrt-x86_64/include/c++/v1/__fwd/string_view.h:22:41: warning: 'char_traits<fmt::detail::char8_type>' is deprecated: char_traits<T> for T not equal to char, wchar_t, char8_t, char16_t or char32_t is non-standard and is provided for a temporary period. It will be removed in LLVM 19, so please migrate off of it. [-Wdeprecated-declarations]
+   22 | template <class _CharT, class _Traits = char_traits<_CharT> >
+      |                                         ^
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/qa_headers/fmt/include/fmt/core.h:392:26: note: in instantiation of default argument for 'basic_string_view<fmt::detail::char8_type>' required here
+  392 | template <typename Char> using std_string_view = std::basic_string_view<Char>;
+      |                          ^~~~~
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/qa_headers/fmt/include/fmt/core.h:487:50: note: in instantiation of template type alias 'std_string_view' requested here
+  487 |                                       S, detail::std_string_view<Char>>::value)>
+      |                                                  ^
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/qa_headers/fmt/include/fmt/format.h:597:57: note: in instantiation of template class 'fmt::basic_string_view<fmt::detail::char8_type>' requested here
+  597 | inline auto compute_width(basic_string_view<char8_type> s) -> size_t {
+      |                                                         ^
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/llvm-mingw-20240619-ucrt-x86_64/include/c++/v1/__string/char_traits.h:81:8: note: 'char_traits<fmt::detail::char8_type>' has been explicitly marked deprecated here
+   81 | struct _LIBCPP_DEPRECATED_(
+      |        ^
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/llvm-mingw-20240619-ucrt-x86_64/include/c++/v1/__config:975:53: note: expanded from macro '_LIBCPP_DEPRECATED_'
+  975 | #      define _LIBCPP_DEPRECATED_(m) __attribute__((__deprecated__(m)))
+      |                                                     ^
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/task1_github_project/tests/task1_solver_follow.cpp:73:62: error: no viable conversion from 'MatCommaInitializer_<double>' to 'const _InputArray'
+   73 |       camera_points, cv::Vec3d(0, 0, 0), cv::Vec3d(0, 0, 0), intrinsic,
+      |                                                              ^~~~~~~~~
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.hpp:158:18: note: candidate constructor (the implicit copy constructor) not viable: no known conversion from 'MatCommaInitializer_<double>' to 'const _InputArray &' for 1st argument
+  158 | class CV_EXPORTS _InputArray
+      |                  ^~~~~~~~~~~
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.hpp:192:5: note: candidate constructor not viable: no known conversion from 'MatCommaInitializer_<double>' to 'const MatExpr &' for 1st argument
+  192 |     _InputArray(const MatExpr& expr);
+      |     ^           ~~~~~~~~~~~~~~~~~~~
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.hpp:198:5: note: candidate constructor not viable: no known conversion from 'MatCommaInitializer_<double>' to 'const std::vector<std::vector<bool>> &' for 1st argument
+  198 |     _InputArray(const std::vector<std::vector<bool> >&) = delete;  // not supported
+      |     ^           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.inl.hpp:103:21: note: candidate constructor not viable: no known conversion from 'MatCommaInitializer_<double>' to 'const Mat &' for 1st argument
+  103 | inline _InputArray::_InputArray(const Mat& m) { init(MAT+ACCESS_READ, &m); }
+      |                     ^           ~~~~~~~~~~~~
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.inl.hpp:104:21: note: candidate constructor not viable: no known conversion from 'MatCommaInitializer_<double>' to 'const std::vector<Mat> &' for 1st argument
+  104 | inline _InputArray::_InputArray(const std::vector<Mat>& vec) { init(STD_VECTOR_MAT+ACCESS_READ, &vec); }
+      |                     ^           ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.inl.hpp:105:21: note: candidate constructor not viable: no known conversion from 'MatCommaInitializer_<double>' to 'const UMat &' for 1st argument
+  105 | inline _InputArray::_InputArray(const UMat& m) { init(UMAT+ACCESS_READ, &m); }
+      |                     ^           ~~~~~~~~~~~~~
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.inl.hpp:106:21: note: candidate constructor not viable: no known conversion from 'MatCommaInitializer_<double>' to 'const std::vector<UMat> &' for 1st argument
+  106 | inline _InputArray::_InputArray(const std::vector<UMat>& vec) { init(STD_VECTOR_UMAT+ACCESS_READ, &vec); }
+      |                     ^           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.inl.hpp:121:14: note: candidate constructor not viable: no known conversion from 'MatCommaInitializer_<double>' to 'const std::vector<bool> &' for 1st argument
+  121 | _InputArray::_InputArray(const std::vector<bool>& vec)
+      |              ^           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.inl.hpp:144:21: note: candidate constructor not viable: no known conversion from 'MatCommaInitializer_<double>' to 'const double &' for 1st argument
+  144 | inline _InputArray::_InputArray(const double& val)
+      |                     ^           ~~~~~~~~~~~~~~~~~
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.inl.hpp:147:21: note: candidate constructor not viable: no known conversion from 'MatCommaInitializer_<double>' to 'const cuda::GpuMat &' for 1st argument
+  147 | inline _InputArray::_InputArray(const cuda::GpuMat& d_mat)
+      |                     ^           ~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.inl.hpp:150:21: note: candidate constructor not viable: no known conversion from 'MatCommaInitializer_<double>' to 'const std::vector<cuda::GpuMat> &' for 1st argument
+  150 | inline _InputArray::_InputArray(const std::vector<cuda::GpuMat>& d_mat)
+      |                     ^           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.inl.hpp:153:21: note: candidate constructor not viable: no known conversion from 'MatCommaInitializer_<double>' to 'const ogl::Buffer &' for 1st argument
+  153 | inline _InputArray::_InputArray(const ogl::Buffer& buf)
+      |                     ^           ~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.inl.hpp:156:21: note: candidate constructor not viable: no known conversion from 'MatCommaInitializer_<double>' to 'const cuda::HostMem &' for 1st argument
+  156 | inline _InputArray::_InputArray(const cuda::HostMem& cuda_mem)
+      |                     ^           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.hpp:207:28: note: candidate template ignored: could not match 'GpuMat_' against 'MatCommaInitializer_'
+  207 |     template<typename _Tp> _InputArray(const cudev::GpuMat_<_Tp>& m);
+      |                            ^
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.inl.hpp:109:14: note: candidate template ignored: could not match 'vector' against 'MatCommaInitializer_'
+  109 | _InputArray::_InputArray(const std::vector<_Tp>& vec)
+      |              ^
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.inl.hpp:113:14: note: candidate template ignored: could not match 'array' against 'MatCommaInitializer_'
+  113 | _InputArray::_InputArray(const std::array<_Tp, _Nm>& arr)
+      |              ^
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.inl.hpp:117:14: note: candidate template ignored: could not match 'array' against 'MatCommaInitializer_'
+  117 | _InputArray::_InputArray(const std::array<Mat, _Nm>& arr)
+      |              ^
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.inl.hpp:125:14: note: candidate template ignored: could not match 'vector' against 'MatCommaInitializer_'
+  125 | _InputArray::_InputArray(const std::vector<std::vector<_Tp> >& vec)
+      |              ^
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.inl.hpp:129:14: note: candidate template ignored: could not match 'vector' against 'MatCommaInitializer_'
+  129 | _InputArray::_InputArray(const std::vector<Mat_<_Tp> >& vec)
+      |              ^
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.inl.hpp:133:14: note: candidate template ignored: could not match 'Matx' against 'MatCommaInitializer_'
+  133 | _InputArray::_InputArray(const Matx<_Tp, m, n>& mtx)
+      |              ^
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.inl.hpp:141:14: note: candidate template ignored: could not match 'Mat_' against 'MatCommaInitializer_'
+  141 | _InputArray::_InputArray(const Mat_<_Tp>& m)
+      |              ^
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/core/mat.hpp:522:5: note: candidate function
+  522 |     operator Mat_<_Tp>() const;
+      |     ^
+C:/Users/hp/Documents/Codex/2026-10-21/w/work/opencv_prefix/include/opencv2/calib3d.hpp:881:45: note: passing argument to parameter 'cameraMatrix' here
+  881 |                                  InputArray cameraMatrix, InputArray distCoeffs,
+      |                                             ^
+
+1 warning and 1 error generated.
+
+[23/27] Building CXX object tests/CMakeFiles/task2_solver_roundtrip.dir/__/tasks/auto_aim/solver.cpp.obj
+[24/27] Building CXX object tests/CMakeFiles/task1_solver_follow.dir/__/tasks/auto_aim/armor.cpp.obj
+[25/27] Building CXX object tests/CMakeFiles/task1_solver_follow.dir/__/tasks/auto_aim/solver.cpp.obj
+ninja: build stopped: subcommand failed.
